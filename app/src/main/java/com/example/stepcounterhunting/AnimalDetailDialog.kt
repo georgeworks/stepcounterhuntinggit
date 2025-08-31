@@ -11,9 +11,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 
-class AnimalCaughtDialog(
-    private val animal: Animal,
-    private val onDismiss: () -> Unit
+class AnimalDetailDialog(
+    private val animal: Animal
 ) : DialogFragment() {
 
     override fun onCreateView(
@@ -21,18 +20,19 @@ class AnimalCaughtDialog(
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.dialog_animal_caught, container, false)
+        return inflater.inflate(R.layout.dialog_animal_detail, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val animalImage: ImageView = view.findViewById(R.id.caught_animal_image)
-        val animalName: TextView = view.findViewById(R.id.caught_animal_name)
-        val animalRarity: TextView = view.findViewById(R.id.caught_animal_rarity)
-        val animalDescription: TextView = view.findViewById(R.id.caught_animal_description)
-        val animalFunFact: TextView = view.findViewById(R.id.caught_animal_fun_fact)
-        val continueButton: Button = view.findViewById(R.id.continue_button)
+        val animalImage: ImageView = view.findViewById(R.id.detail_animal_image)
+        val animalName: TextView = view.findViewById(R.id.detail_animal_name)
+        val animalRarity: TextView = view.findViewById(R.id.detail_animal_rarity)
+        val animalDescription: TextView = view.findViewById(R.id.detail_animal_description)
+        val animalFunFact: TextView = view.findViewById(R.id.detail_animal_fun_fact)
+        val animalRegion: TextView = view.findViewById(R.id.detail_animal_region)
+        val closeButton: Button = view.findViewById(R.id.close_button)
 
         animalImage.setImageResource(animal.imageResource)
         animalName.text = animal.name
@@ -40,9 +40,9 @@ class AnimalCaughtDialog(
         animalRarity.setTextColor(Color.parseColor(animal.rarity.color))
         animalDescription.text = animal.description
         animalFunFact.text = "Fun Fact: ${animal.funFact}"
+        animalRegion.text = "Found in: ${animal.region}"
 
-        continueButton.setOnClickListener {
-            onDismiss()
+        closeButton.setOnClickListener {
             dismiss()
         }
     }

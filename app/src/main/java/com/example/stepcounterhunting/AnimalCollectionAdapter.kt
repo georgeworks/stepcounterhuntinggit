@@ -10,7 +10,8 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 
 class AnimalCollectionAdapter(
-    private var animals: List<Animal>
+    private var animals: List<Animal>,
+    private val onAnimalClick: (Animal) -> Unit  // Add click callback
 ) : RecyclerView.Adapter<AnimalCollectionAdapter.AnimalViewHolder>() {
 
     class AnimalViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -39,6 +40,15 @@ class AnimalCollectionAdapter(
 
         // Set placeholder image
         holder.imageView.setImageResource(animal.imageResource)
+
+        // Add click listener to the entire card
+        holder.cardView.setOnClickListener {
+            onAnimalClick(animal)
+        }
+
+        // Add ripple effect on click (visual feedback)
+        holder.cardView.isClickable = true
+        holder.cardView.isFocusable = true
     }
 
     override fun getItemCount() = animals.size

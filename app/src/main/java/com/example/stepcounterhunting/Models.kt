@@ -6,6 +6,7 @@ data class Animal(
     val description: String,
     val rarity: Rarity,
     val region: String,
+    val funFact: String,  // Added fun fact field
     val imageResource: Int = R.drawable.ic_animal_placeholder
 )
 

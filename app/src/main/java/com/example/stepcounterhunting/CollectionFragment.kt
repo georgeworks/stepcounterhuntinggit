@@ -26,8 +26,17 @@ class CollectionFragment : Fragment() {
         recyclerView = view.findViewById(R.id.collection_recycler_view)
         recyclerView.layoutManager = GridLayoutManager(context, 2)
 
-        adapter = AnimalCollectionAdapter(DataManager.getCollection())
+        // Pass click listener to adapter
+        adapter = AnimalCollectionAdapter(DataManager.getCollection()) { animal ->
+            showAnimalDetails(animal)
+        }
         recyclerView.adapter = adapter
+    }
+
+    private fun showAnimalDetails(animal: Animal) {
+        // Create a new dialog instance for viewing collection animals
+        val dialog = AnimalDetailDialog(animal)
+        dialog.show(childFragmentManager, "animal_detail")
     }
 
     override fun onResume() {
