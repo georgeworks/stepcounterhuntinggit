@@ -17,8 +17,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Initialize DataManager with context
-        DataManager.initialize(this)
+        // Initialize DataManager
+        DataManager.init(this)
 
         bottomNav = findViewById(R.id.bottom_navigation)
 
@@ -57,38 +57,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestStepCounterPermission() {
-        val permissionsToRequest = mutableListOf<String>()
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.ACTIVITY_RECOGNITION
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                permissionsToRequest.add(Manifest.permission.ACTIVITY_RECOGNITION)
-            }
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
+                ActivityCompat.requestPermissions(
                     this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                    arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+                    PERMISSION_REQUEST_ACTIVITY_RECOGNITION
+                )
             }
-        }
-
-        if (permissionsToRequest.isNotEmpty()) {
-            ActivityCompat.requestPermissions(
-                this,
-                permissionsToRequest.toTypedArray(),
-                PERMISSION_REQUEST_CODE
-            )
         }
     }
 
     companion object {
-        const val PERMISSION_REQUEST_CODE = 1001
+        const val PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 1001
     }
 }

@@ -1,18 +1,52 @@
 package com.example.stepcounterhunting
 
 import android.content.Context
+import android.content.SharedPreferences
 
 object DataManager {
-    private var collection = mutableListOf<Animal>()
-    private var exploredRegions = mutableSetOf<String>()
-    private var isInitialized = false
+    private lateinit var prefs: SharedPreferences
+    private lateinit var stepPrefs: SharedPreferences  // Add this
+    private val collection = mutableListOf<Animal>()
+    private val exploredRegions = mutableSetOf<String>()
 
-    fun initialize(context: Context) {
-        if (!isInitialized) {
-            collection = HuntStateManager.loadCollection(context).toMutableList()
-            exploredRegions = HuntStateManager.loadExploredRegions(context).toMutableSet()
-            isInitialized = true
+    fun init(context: Context) {
+        prefs = context.getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
+        stepPrefs = context.getSharedPreferences("StepCounter", Context.MODE_PRIVATE)  // Initialize this
+        loadData()
+    }
+
+    private fun loadData() {
+        // Load collection (simplified - just stores animal IDs)
+        val collectionString = prefs.getString("collection", "") ?: ""
+        if (collectionString.isNotEmpty()) {
+            val animalIds = collectionString.split(",")
+            collection.clear()
+            animalIds.forEach { id ->
+                findAnimalById(id)?.let { collection.add(it) }
+            }
         }
+
+        // Load explored regions
+        val regionsString = prefs.getString("explored_regions", "") ?: ""
+        if (regionsString.isNotEmpty()) {
+            exploredRegions.clear()
+            exploredRegions.addAll(regionsString.split(","))
+        }
+    }
+
+    private fun saveData() {
+        // Save collection as comma-separated IDs
+        val collectionString = collection.joinToString(",") { it.id }
+        prefs.edit().putString("collection", collectionString).apply()
+
+        // Save explored regions
+        val regionsString = exploredRegions.joinToString(",")
+        prefs.edit().putString("explored_regions", regionsString).apply()
+    }
+
+    private fun findAnimalById(id: String): Animal? {
+        val allAnimals = usRegions.flatMap { it.animals } + getDefaultAnimals()
+        return allAnimals.find { it.id == id }
     }
 
     val usRegions = listOf(
@@ -88,22 +122,24 @@ object DataManager {
         )
     }
 
-    fun addToCollection(animal: Animal, context: Context? = null) {
+    fun addToCollection(animal: Animal) {
         collection.add(animal)
-        exploredRegions.add(animal.region)
-
-        // Save to SharedPreferences if context is provided
-        context?.let {
-            HuntStateManager.saveCollection(it, collection)
-            HuntStateManager.saveExploredRegions(it, exploredRegions)
-        }
+        saveData()
     }
 
     fun getCollection(): List<Animal> = collection.toList()
 
-    fun getStats(context: Context): UserStats {
+    fun addExploredRegion(region: String) {
+        exploredRegions.add(region)
+        saveData()
+    }
+
+    fun getExploredRegions(): Set<String> = exploredRegions.toSet()
+
+    fun getStats(): UserStats {
+        // Now we can use stepPrefs directly
         return UserStats(
-            totalSteps = HuntStateManager.getTotalSteps(context),
+            totalSteps = stepPrefs.getInt("total_lifetime_steps", 0),
             animalsCollected = collection.size,
             regionsExplored = exploredRegions.size
         )

@@ -31,7 +31,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun updateStats() {
-        val stats = DataManager.getStats(requireContext())
+        val stats = DataManager.getStats()
         totalStepsText.text = "Total Steps: ${stats.totalSteps}"
         animalsCollectedText.text = "Animals Collected: ${stats.animalsCollected}"
         regionsExploredText.text = "Regions Explored: ${stats.regionsExplored}"
