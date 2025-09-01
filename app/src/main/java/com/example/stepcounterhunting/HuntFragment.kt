@@ -1,6 +1,8 @@
+// HuntFragment.kt - WITH SIMPLE NOTIFICATION
 package com.example.stepcounterhunting
 
 import android.Manifest
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -44,6 +46,10 @@ class HuntFragment : Fragment(), SensorEventListener {
     private var currentRegion: Region? = null
     private var hasCompletedCurrentHunt = false
     private var isShowingDialog = false
+    private var selectedCountry: String? = null
+    private var selectedRegionName: String? = null
+    private var huntingCountry: String? = null
+    private var huntingRegionName: String? = null
     private var lastNotificationUpdate = 0L
 
     companion object {
@@ -88,14 +94,22 @@ class HuntFragment : Fragment(), SensorEventListener {
         restoreHuntState()
 
         startHuntButton.setOnClickListener {
-            if (isHunting) {
-                stopHunting()
-            } else {
-                // Check for notification permission first
-                if (!hasNotificationPermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    requestNotificationPermission()
+            when {
+                !isHunting -> {
+                    // Not hunting, start a new hunt
+                    if (!hasNotificationPermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        requestNotificationPermission()
+                    }
+                    startHunting()
                 }
-                startHunting()
+                isHunting && (selectedCountry != huntingCountry || selectedRegionName != huntingRegionName) -> {
+                    // Hunting but selected different region, show warning
+                    showRegionChangeDialog()
+                }
+                else -> {
+                    // Normal stop hunting
+                    stopHunting()
+                }
             }
         }
 
@@ -147,7 +161,9 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         countrySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedCountry = countries[position]
                 updateRegionSpinner(countries[position])
+                checkForRegionChange()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -167,6 +183,31 @@ class HuntFragment : Fragment(), SensorEventListener {
         val regionAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, regions)
         regionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         regionSpinner.adapter = regionAdapter
+
+        regionSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedRegionName = regions[position]
+                checkForRegionChange()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
+
+    private fun checkForRegionChange() {
+        if (isHunting && !hasCompletedCurrentHunt) {
+            // Check if the selected region is different from the hunting region
+            if ((selectedCountry != huntingCountry || selectedRegionName != huntingRegionName)
+                && selectedCountry != null && selectedRegionName != null) {
+                // User selected a different region while hunting
+                startHuntButton.text = "Change Region?"
+                startHuntButton.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark))
+            } else {
+                // Same region selected, show normal stop button
+                startHuntButton.text = "Stop Hunting"
+                startHuntButton.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_light))
+            }
+        }
     }
 
     private fun restoreHuntState() {
@@ -183,6 +224,12 @@ class HuntFragment : Fragment(), SensorEventListener {
             val savedRegion = prefs.getString("current_region", "") ?: ""
 
             if (savedCountry.isNotEmpty() && savedRegion.isNotEmpty()) {
+                // Restore hunting region info
+                huntingCountry = savedCountry
+                huntingRegionName = savedRegion
+                selectedCountry = savedCountry
+                selectedRegionName = savedRegion
+
                 // Restore spinner selections
                 val countryAdapter = countrySpinner.adapter
                 for (i in 0 until countryAdapter.count) {
@@ -211,6 +258,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 }
 
                 startHuntButton.text = "Stop Hunting"
+                startHuntButton.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_light))
                 currentRegionText.text = "Hunting in: $savedRegion"
 
                 // Check if we need to show the catch dialog
@@ -244,6 +292,10 @@ class HuntFragment : Fragment(), SensorEventListener {
                 isHunting = false
                 prefs.edit().putBoolean("is_hunting", false).apply()
             }
+        } else {
+            // Not hunting, ensure button shows correct state
+            startHuntButton.text = "Start Hunting"
+            startHuntButton.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
         }
 
         updateUI()
@@ -269,6 +321,12 @@ class HuntFragment : Fragment(), SensorEventListener {
         hasCompletedCurrentHunt = false
         isShowingDialog = false
 
+        // Save the hunting region
+        huntingCountry = selectedCountry
+        huntingRegionName = selectedRegionName
+        this.selectedCountry = selectedCountry
+        this.selectedRegionName = selectedRegionName
+
         // Save hunting state
         prefs.edit()
             .putBoolean("is_hunting", true)
@@ -281,6 +339,7 @@ class HuntFragment : Fragment(), SensorEventListener {
             .apply()
 
         startHuntButton.text = "Stop Hunting"
+        startHuntButton.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_light))
         currentRegionText.text = "Hunting in: $selectedRegionName"
         huntStatusText.text = "Hunt started! Walk $STEPS_REQUIRED steps to catch an animal!"
 
@@ -300,12 +359,51 @@ class HuntFragment : Fragment(), SensorEventListener {
         updateUI()
     }
 
+    private fun showRegionChangeDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Change Region?")
+            .setMessage("You have $stepCount steps in ${huntingRegionName}.\n\nChanging regions will lose your current progress. Are you sure you want to switch to ${selectedRegionName}?")
+            .setPositiveButton("Yes, Change Region") { _, _ ->
+                // Stop current hunt and start new one
+                stopHunting()
+                startHunting()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                // Reset spinners to current hunting region
+                val countryAdapter = countrySpinner.adapter
+                for (i in 0 until countryAdapter.count) {
+                    if (countryAdapter.getItem(i) == huntingCountry) {
+                        countrySpinner.setSelection(i)
+                        break
+                    }
+                }
+
+                countrySpinner.post {
+                    val regionAdapter = regionSpinner.adapter
+                    if (regionAdapter != null) {
+                        for (i in 0 until regionAdapter.count) {
+                            if (regionAdapter.getItem(i) == huntingRegionName) {
+                                regionSpinner.setSelection(i)
+                                break
+                            }
+                        }
+                    }
+                }
+
+                dialog.dismiss()
+            }
+            .setCancelable(true)
+            .show()
+    }
+
     private fun stopHunting() {
         isHunting = false
         stepCount = 0
         initialStepCount = -1
         hasCompletedCurrentHunt = false
         isShowingDialog = false
+        huntingCountry = null
+        huntingRegionName = null
 
         // Clear hunting state
         prefs.edit()
@@ -318,6 +416,7 @@ class HuntFragment : Fragment(), SensorEventListener {
             .apply()
 
         startHuntButton.text = "Start Hunting"
+        startHuntButton.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
         huntStatusText.text = "Hunt stopped"
         currentRegionText.text = ""
 
