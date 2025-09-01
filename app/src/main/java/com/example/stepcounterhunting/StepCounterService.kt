@@ -16,16 +16,16 @@ class StepCounterService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var stepSensor: Sensor? = null
     private lateinit var prefs: SharedPreferences
+    private lateinit var notificationManager: NotificationManager
     private var initialStepCount = -1
 
     companion object {
-        const val CHANNEL_ID = "StepCounterChannel"
-        const val NOTIFICATION_ID = 1
-        const val ACTION_STOP_SERVICE = "com.example.stepcounterhunting.STOP_SERVICE"
+        const val CHANNEL_ID = "StepHuntingChannel"
+        const val NOTIFICATION_ID = 2001
+        const val STEPS_REQUIRED = 100  // Match with HuntFragment
 
-        fun startService(context: Context, region: String) {
+        fun startService(context: Context) {
             val intent = Intent(context, StepCounterService::class.java)
-            intent.putExtra("region", region)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -44,24 +44,18 @@ class StepCounterService : Service(), SensorEventListener {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         prefs = getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Handle stop action from notification
-        if (intent?.action == ACTION_STOP_SERVICE) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        val region = intent?.getStringExtra("region") ?: prefs.getString("current_region", "Unknown") ?: "Unknown"
-
         // Restore initial step count
         initialStepCount = prefs.getInt("initial_step_count", -1)
 
-        // Start foreground service with notification
-        startForeground(NOTIFICATION_ID, createNotification(region, 0))
+        // Start as foreground service with notification
+        val notification = createNotification()
+        startForeground(NOTIFICATION_ID, notification)
 
         // Register sensor listener
         stepSensor?.let {
@@ -73,27 +67,25 @@ class StepCounterService : Service(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
+            // Initialize on first reading
             if (initialStepCount < 0) {
                 initialStepCount = event.values[0].toInt()
                 prefs.edit().putInt("initial_step_count", initialStepCount).apply()
             }
 
+            // Calculate current steps
             val currentSteps = event.values[0].toInt() - initialStepCount
 
-            // Save current steps
+            // Save to preferences
             prefs.edit().putInt("current_steps", currentSteps).apply()
 
-            // Update notification with progress
-            val region = prefs.getString("current_region", "Unknown") ?: "Unknown"
-            updateNotification(region, currentSteps)
+            // Update notification
+            updateNotification(currentSteps)
 
             // Check if goal reached
-            if (currentSteps >= HuntFragment.STEPS_REQUIRED && !prefs.getBoolean("hunt_completed", false)) {
-                // Mark as completed to prevent multiple triggers
+            if (currentSteps >= STEPS_REQUIRED && !prefs.getBoolean("hunt_completed", false)) {
                 prefs.edit().putBoolean("hunt_completed", true).apply()
-
-                // Update notification to show completion
-                showCompletionNotification(region)
+                showCompletionNotification()
             }
         }
     }
@@ -104,21 +96,23 @@ class StepCounterService : Service(), SensorEventListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Step Counter Hunting",
+                "Step Hunting Progress",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows your hunting progress while the app counts your steps"
+                description = "Shows your hunting progress while counting steps"
                 setShowBadge(false)
                 setSound(null, null)
             }
-
-            val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    private fun createNotification(region: String, steps: Int): Notification {
-        // Create intent to open app when notification is tapped
+    private fun createNotification(): Notification {
+        val currentSteps = prefs.getInt("current_steps", 0)
+        val region = prefs.getString("current_region", "Unknown") ?: "Unknown"
+        val progress = (currentSteps * 100) / STEPS_REQUIRED
+        val stepsRemaining = (STEPS_REQUIRED - currentSteps).coerceAtLeast(0)
+
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -127,46 +121,48 @@ class StepCounterService : Service(), SensorEventListener {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Create stop action for notification
-        val stopIntent = Intent(this, StepCounterService::class.java).apply {
-            action = ACTION_STOP_SERVICE
-        }
-        val stopPendingIntent = PendingIntent.getService(
-            this, 0, stopIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val progress = (steps * 100) / HuntFragment.STEPS_REQUIRED
-        val stepsRemaining = (HuntFragment.STEPS_REQUIRED - steps).coerceAtLeast(0)
-
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("🦌 Hunting in $region")
-            .setContentText("Progress: $steps / ${HuntFragment.STEPS_REQUIRED} steps")
+            .setContentText("Progress: $currentSteps / $STEPS_REQUIRED steps")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setProgress(HuntFragment.STEPS_REQUIRED, steps, false)
+            .setProgress(STEPS_REQUIRED, currentSteps, false)
             .setSubText("$stepsRemaining steps to go • ${progress}% complete")
-            .addAction(
-                android.R.drawable.ic_menu_close_clear_cancel,
-                "Stop Hunting",
-                stopPendingIntent
-            )
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("You're ${progress}% of the way to catching an animal! Keep walking $stepsRemaining more steps.")
-            )
             .build()
     }
 
-    private fun updateNotification(region: String, steps: Int) {
-        val notification = createNotification(region, steps)
-        val notificationManager = getSystemService(NotificationManager::class.java)
+    private fun updateNotification(steps: Int) {
+        val region = prefs.getString("current_region", "Unknown") ?: "Unknown"
+        val progress = (steps * 100) / STEPS_REQUIRED
+        val stepsRemaining = (STEPS_REQUIRED - steps).coerceAtLeast(0)
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("🦌 Hunting in $region")
+            .setContentText("Progress: $steps / $STEPS_REQUIRED steps")
+            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setProgress(STEPS_REQUIRED, steps, false)
+            .setSubText("$stepsRemaining steps to go • ${progress}% complete")
+            .build()
+
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun showCompletionNotification(region: String) {
+    private fun showCompletionNotification() {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -177,29 +173,20 @@ class StepCounterService : Service(), SensorEventListener {
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("🎉 Animal Caught!")
-            .setContentText("You've walked ${HuntFragment.STEPS_REQUIRED} steps in $region!")
+            .setContentText("You've walked $STEPS_REQUIRED steps! Tap to see what you caught!")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setSilent(false)
+            .setOngoing(false)
+            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("Congratulations! You've caught an animal! Open the app to see what you found.")
-            )
-            .setAutoCancel(false)
             .build()
 
-        val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         sensorManager.unregisterListener(this)
-
-        // Clear notification when service stops
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.cancel(NOTIFICATION_ID)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
