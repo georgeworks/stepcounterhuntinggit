@@ -1,4 +1,3 @@
-// HuntFragment.kt - WITH SIMPLE NOTIFICATION
 package com.example.stepcounterhunting
 
 import android.Manifest
@@ -174,7 +173,10 @@ class HuntFragment : Fragment(), SensorEventListener {
         isHunting = prefs.getBoolean("is_hunting", false)
         stepCount = prefs.getInt("current_steps", 0)
         initialStepCount = prefs.getInt("initial_step_count", -1)
-        hasCompletedCurrentHunt = prefs.getBoolean("hunt_completed", false)
+
+        // Check if service marked hunt as completed while app was closed
+        val serviceCompletedHunt = prefs.getBoolean("hunt_completed", false)
+        val needsToShowCatch = serviceCompletedHunt && !hasCompletedCurrentHunt && stepCount >= STEPS_REQUIRED
 
         if (isHunting) {
             val savedCountry = prefs.getString("current_country", "") ?: ""
@@ -211,22 +213,32 @@ class HuntFragment : Fragment(), SensorEventListener {
                 startHuntButton.text = "Stop Hunting"
                 currentRegionText.text = "Hunting in: $savedRegion"
 
-                // Update status text based on completion
-                huntStatusText.text = if (hasCompletedCurrentHunt) {
-                    "Goal reached! Continue hunting or stop to reset."
+                // Check if we need to show the catch dialog
+                if (needsToShowCatch) {
+                    huntStatusText.text = "Goal reached! Opening your catch..."
+                    // Don't set hasCompletedCurrentHunt yet - let catchAnimal do it
+                    // Delay slightly to ensure UI is ready
+                    view?.postDelayed({
+                        if (!isShowingDialog && currentRegion != null) {
+                            catchAnimal()
+                        }
+                    }, 500)
+                } else if (serviceCompletedHunt) {
+                    // Already shown before, just update state
+                    hasCompletedCurrentHunt = true
+                    huntStatusText.text = "Goal reached! Continue hunting or stop to reset."
                 } else {
-                    "Hunt in progress!"
-                }
-
-                // Re-register sensor listener only if hunt not completed
-                if (!hasCompletedCurrentHunt) {
+                    huntStatusText.text = "Hunt in progress!"
+                    // Re-register sensor listener only if hunt not completed
                     stepSensor?.let {
                         sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                     }
                 }
 
-                // Show notification if hunting
-                showNotification()
+                // Show notification if hunting and not completed
+                if (!serviceCompletedHunt) {
+                    showNotification()
+                }
             } else {
                 // Invalid saved state, reset
                 isHunting = false
@@ -265,6 +277,7 @@ class HuntFragment : Fragment(), SensorEventListener {
             .putInt("current_steps", 0)
             .putInt("initial_step_count", -1)
             .putBoolean("hunt_completed", false)
+            .putBoolean("catch_processed", false)  // Reset the processed flag
             .apply()
 
         startHuntButton.text = "Stop Hunting"
@@ -444,11 +457,21 @@ class HuntFragment : Fragment(), SensorEventListener {
             return
         }
 
+        // Check if we already processed this catch (for the current hunt session)
+        val catchProcessed = prefs.getBoolean("catch_processed", false)
+        if (catchProcessed) {
+            hasCompletedCurrentHunt = true
+            return
+        }
+
         hasCompletedCurrentHunt = true
         isShowingDialog = true
 
-        // Save completion state
-        prefs.edit().putBoolean("hunt_completed", true).apply()
+        // Mark this catch as processed
+        prefs.edit()
+            .putBoolean("hunt_completed", true)
+            .putBoolean("catch_processed", true)
+            .apply()
 
         // Unregister sensor to stop counting
         sensorManager?.unregisterListener(this)
@@ -491,6 +514,7 @@ class HuntFragment : Fragment(), SensorEventListener {
             .putInt("current_steps", 0)
             .putInt("initial_step_count", -1)
             .putBoolean("hunt_completed", false)
+            .putBoolean("catch_processed", false)  // Reset the processed flag
             .apply()
 
         // Re-register sensor listener
@@ -500,8 +524,12 @@ class HuntFragment : Fragment(), SensorEventListener {
             }
             huntStatusText.text = "Continue hunting! Walk another $STEPS_REQUIRED steps for the next animal!"
 
-            // Update notification for new hunt
-            showNotification()
+            // Restart the service for the next hunt
+            try {
+                StepCounterService.startService(requireContext())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         updateUI()
@@ -530,9 +558,28 @@ class HuntFragment : Fragment(), SensorEventListener {
 
     override fun onResume() {
         super.onResume()
-        if (isHunting && !hasCompletedCurrentHunt) {
-            stepSensor?.let {
-                sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        if (isHunting) {
+            // Always check for latest step count from service
+            val latestSteps = prefs.getInt("current_steps", 0)
+            val huntCompleted = prefs.getBoolean("hunt_completed", false)
+
+            // Update our local step count
+            stepCount = latestSteps
+
+            // Check if hunt was completed while we were away
+            if (huntCompleted && !hasCompletedCurrentHunt && !isShowingDialog && stepCount >= STEPS_REQUIRED) {
+                // Service completed the hunt while app was closed
+                updateUI()
+                // Trigger the catch dialog
+                if (currentRegion != null) {
+                    catchAnimal()
+                }
+            } else if (!hasCompletedCurrentHunt) {
+                // Resume normal sensor listening if hunt not complete
+                stepSensor?.let {
+                    sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+                }
+                updateUI()
             }
         }
         isShowingDialog = false  // Reset dialog flag when resuming

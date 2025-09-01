@@ -1,13 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="320dp"
+    android:layout_width="360dp"
     android:layout_height="wrap_content"
+    android:layout_gravity="center"
     app:cardCornerRadius="16dp"
     app:cardElevation="8dp">
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:maxHeight="500dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -76,33 +79,45 @@
                 app:cardBackgroundColor="#F0F8FF"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="0dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="16dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp">
 
-                <LinearLayout
+                <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:maxHeight="150dp"
+                    android:scrollbars="vertical"
+                    android:fadeScrollbars="false">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🎯 FUN FACT"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="#2196F3"
-                        android:layout_marginBottom="4dp" />
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                    <TextView
-                        android:id="@+id/detail_animal_fun_fact"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Fun fact goes here"
-                        android:textSize="14sp"
-                        android:textColor="#333333"
-                        android:lineSpacingMultiplier="1.2" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🎯 FUN FACT"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#2196F3"
+                            android:layout_marginBottom="6dp" />
 
-                </LinearLayout>
+                        <TextView
+                            android:id="@+id/detail_animal_fun_fact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Fun fact goes here"
+                            android:textSize="14sp"
+                            android:textColor="#333333"
+                            android:lineSpacingMultiplier="1.25"
+                            android:paddingRight="4dp" />
+
+                    </LinearLayout>
+
+                </ScrollView>
 
             </androidx.cardview.widget.CardView>
 
