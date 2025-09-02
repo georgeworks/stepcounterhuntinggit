@@ -5,6 +5,19 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+
+    <TextView
+        android:id="@+id/lure_count_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lures: 0"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/holo_orange_dark"
+        android:drawableLeft="@drawable/ic_lure"
+        android:drawablePadding="4dp"
+        android:visibility="gone" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -36,6 +49,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/lure_active_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="LURE ACTIVE"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:background="@android:color/holo_orange_dark"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/start_hunt_button"

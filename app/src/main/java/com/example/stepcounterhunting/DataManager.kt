@@ -45,6 +45,99 @@ object DataManager {
         return allAnimals.find { it.id == id }
     }
 
+    fun addToCollection(animal: Animal): Boolean {
+        // Check if it's a duplicate
+        val isDuplicate = collection.any { it.id == animal.id }
+
+        collection.add(animal)
+        saveData()
+
+        // If it's a duplicate, award a lure
+        if (isDuplicate) {
+            val currentLures = getLureCount()
+            setLureCount(currentLures + 1)
+        }
+
+        return isDuplicate
+    }
+
+    fun getLureCount(): Int {
+        return prefs.getInt("lure_count", 0)
+    }
+
+    fun setLureCount(count: Int) {
+        prefs.edit().putInt("lure_count", count).apply()
+    }
+
+    fun useLure() {
+        val currentLures = getLureCount()
+        if (currentLures > 0) {
+            setLureCount(currentLures - 1)
+        }
+    }
+
+    fun getCollection(): List<Animal> = collection.toList()
+
+    fun addExploredRegion(region: String) {
+        exploredRegions.add(region)
+        saveData()
+    }
+
+    fun getExploredRegions(): Set<String> = exploredRegions.toSet()
+
+    fun getStats(): UserStats {
+        return UserStats(
+            totalSteps = stepPrefs.getInt("total_lifetime_steps", 0),
+            animalsCollected = collection.size,
+            regionsExplored = exploredRegions.size
+        )
+    }
+
+    fun getDefaultAnimals(): List<Animal> {
+        return listOf(
+            Animal(
+                "default_1",
+                "Common Animal",
+                "Basic creature",
+                Rarity.COMMON,
+                "Default",
+                "This mysterious creature adapts to any environment!"
+            ),
+            Animal(
+                "default_2",
+                "Uncommon Animal",
+                "Interesting creature",
+                Rarity.UNCOMMON,
+                "Default",
+                "Scientists are still discovering new facts about this species!"
+            ),
+            Animal(
+                "default_3",
+                "Rare Animal",
+                "Hard to find",
+                Rarity.RARE,
+                "Default",
+                "Only a few hundred of these animals have ever been documented!"
+            ),
+            Animal(
+                "default_4",
+                "Epic Animal",
+                "Very special",
+                Rarity.EPIC,
+                "Default",
+                "This creature has abilities that seem almost supernatural!"
+            ),
+            Animal(
+                "default_5",
+                "Legendary Animal",
+                "Extremely rare",
+                Rarity.LEGENDARY,
+                "Default",
+                "Some say this animal doesn't exist, but you've proven them wrong!"
+            )
+        )
+    }
+
     val usRegions = listOf(
         Region(
             "Northeast",
@@ -387,71 +480,4 @@ object DataManager {
             )
         )
     )
-
-    fun getDefaultAnimals(): List<Animal> {
-        return listOf(
-            Animal(
-                "default_1",
-                "Common Animal",
-                "Basic creature",
-                Rarity.COMMON,
-                "Default",
-                "This mysterious creature adapts to any environment!"
-            ),
-            Animal(
-                "default_2",
-                "Uncommon Animal",
-                "Interesting creature",
-                Rarity.UNCOMMON,
-                "Default",
-                "Scientists are still discovering new facts about this species!"
-            ),
-            Animal(
-                "default_3",
-                "Rare Animal",
-                "Hard to find",
-                Rarity.RARE,
-                "Default",
-                "Only a few hundred of these animals have ever been documented!"
-            ),
-            Animal(
-                "default_4",
-                "Epic Animal",
-                "Very special",
-                Rarity.EPIC,
-                "Default",
-                "This creature has abilities that seem almost supernatural!"
-            ),
-            Animal(
-                "default_5",
-                "Legendary Animal",
-                "Extremely rare",
-                Rarity.LEGENDARY,
-                "Default",
-                "Some say this animal doesn't exist, but you've proven them wrong!"
-            )
-        )
-    }
-
-    fun addToCollection(animal: Animal) {
-        collection.add(animal)
-        saveData()
-    }
-
-    fun getCollection(): List<Animal> = collection.toList()
-
-    fun addExploredRegion(region: String) {
-        exploredRegions.add(region)
-        saveData()
-    }
-
-    fun getExploredRegions(): Set<String> = exploredRegions.toSet()
-
-    fun getStats(): UserStats {
-        return UserStats(
-            totalSteps = stepPrefs.getInt("total_lifetime_steps", 0),
-            animalsCollected = collection.size,
-            regionsExplored = exploredRegions.size
-        )
-    }
 }
