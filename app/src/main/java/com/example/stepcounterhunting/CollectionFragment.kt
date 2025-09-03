@@ -94,30 +94,36 @@ class CollectionFragment : Fragment() {
     }
 
     private fun organizeCollectionByRegion(filter: String): List<CollectionItem> {
-        val caughtAnimals = DataManager.getCollection()
-        val caughtAnimalIds = caughtAnimals.map { it.id }.toSet()
+        val allCaughtAnimals = DataManager.getCollection()
+        // Get unique animals only for display (but keep count information)
+        val uniqueCaughtAnimals = allCaughtAnimals.distinctBy { it.id }
+        val caughtAnimalIds = uniqueCaughtAnimals.map { it.id }.toSet()
+
+        // Create a map of animal counts for showing duplicates
+        val animalCounts = allCaughtAnimals.groupingBy { it.id }.eachCount()
+
         val items = mutableListOf<CollectionItem>()
 
         when (filter) {
             "All" -> {
                 // Show all regions
-                addUSRegions(items, caughtAnimalIds)
-                addOtherCountries(items, caughtAnimals)
+                addUSRegions(items, caughtAnimalIds, animalCounts)
+                addOtherCountries(items, uniqueCaughtAnimals, animalCounts)
             }
             "United States" -> {
                 // Show only US regions
-                addUSRegions(items, caughtAnimalIds)
+                addUSRegions(items, caughtAnimalIds, animalCounts)
             }
             else -> {
                 // Show specific country
-                addSpecificCountry(items, filter, caughtAnimals)
+                addSpecificCountry(items, filter, uniqueCaughtAnimals, animalCounts)
             }
         }
 
         return items
     }
 
-    private fun addUSRegions(items: MutableList<CollectionItem>, caughtAnimalIds: Set<String>) {
+    private fun addUSRegions(items: MutableList<CollectionItem>, caughtAnimalIds: Set<String>, animalCounts: Map<String, Int>) {
         DataManager.usRegions.forEach { region ->
             // Add region header
             items.add(CollectionItem.Header(region.name, countCaughtInRegion(region.animals, caughtAnimalIds)))
@@ -125,30 +131,32 @@ class CollectionFragment : Fragment() {
             // Add all animals from this region (caught and uncaught)
             region.animals.forEach { animal ->
                 val isCaught = caughtAnimalIds.contains(animal.id)
-                items.add(CollectionItem.AnimalCard(animal, isCaught))
+                val count = if (isCaught) animalCounts[animal.id] ?: 1 else 0
+                items.add(CollectionItem.AnimalCard(animal, isCaught, count))
             }
         }
     }
 
-    private fun addOtherCountries(items: MutableList<CollectionItem>, caughtAnimals: List<Animal>) {
+    private fun addOtherCountries(items: MutableList<CollectionItem>, uniqueCaughtAnimals: List<Animal>, animalCounts: Map<String, Int>) {
         val otherCountries = listOf("Canada", "Mexico", "Brazil", "United Kingdom")
         otherCountries.forEach { country ->
-            val caughtInCountry = caughtAnimals.filter { it.region.contains(country) }
+            val caughtInCountry = uniqueCaughtAnimals.filter { it.region.contains(country) }
 
             if (caughtInCountry.isNotEmpty()) {
                 items.add(CollectionItem.Header(country, caughtInCountry.size))
 
                 caughtInCountry.forEach { animal ->
-                    items.add(CollectionItem.AnimalCard(animal, true))
+                    val count = animalCounts[animal.id] ?: 1
+                    items.add(CollectionItem.AnimalCard(animal, true, count))
                 }
             }
         }
     }
 
-    private fun addSpecificCountry(items: MutableList<CollectionItem>, country: String, caughtAnimals: List<Animal>) {
+    private fun addSpecificCountry(items: MutableList<CollectionItem>, country: String, uniqueCaughtAnimals: List<Animal>, animalCounts: Map<String, Int>) {
         // For non-US countries, we show default animals as placeholders
         val defaultAnimals = DataManager.getDefaultAnimals()
-        val caughtInCountry = caughtAnimals.filter {
+        val caughtInCountry = uniqueCaughtAnimals.filter {
             when (country) {
                 "Canada" -> it.region.contains("Canada")
                 "Mexico" -> it.region.contains("Mexico")
@@ -167,7 +175,8 @@ class CollectionFragment : Fragment() {
 
         // Show caught animals
         caughtInCountry.forEach { animal ->
-            items.add(CollectionItem.AnimalCard(animal, true))
+            val count = animalCounts[animal.id] ?: 1
+            items.add(CollectionItem.AnimalCard(animal, true, count))
         }
 
         // Show uncaught placeholders for non-US countries (using default animals as templates)
@@ -185,7 +194,7 @@ class CollectionFragment : Fragment() {
                         "Explore $country to discover this animal!",
                         templateAnimal.imageResource
                     )
-                    items.add(CollectionItem.AnimalCard(placeholderAnimal, false))
+                    items.add(CollectionItem.AnimalCard(placeholderAnimal, false, 0))
                 }
             }
         }
@@ -196,16 +205,18 @@ class CollectionFragment : Fragment() {
     }
 
     private fun updateTotalProgress(filter: String) {
-        val caughtAnimals = DataManager.getCollection()
+        val allCaughtAnimals = DataManager.getCollection()
+        // Get unique animals for accurate count
+        val uniqueCaughtAnimals = allCaughtAnimals.distinctBy { it.id }
 
         val (caught, total) = when (filter) {
             "All" -> {
-                val totalCaught = caughtAnimals.size
+                val totalCaught = uniqueCaughtAnimals.size  // FIXED: Count unique animals only
                 val totalPossible = 40 + (5 * 4) // 40 US + 5 each for 4 other countries
                 Pair(totalCaught, totalPossible)
             }
             "United States" -> {
-                val usCaught = caughtAnimals.count { animal ->
+                val usCaught = uniqueCaughtAnimals.count { animal ->  // FIXED: Count unique animals
                     DataManager.usRegions.any { region ->
                         region.animals.any { it.id == animal.id }
                     }
@@ -213,7 +224,7 @@ class CollectionFragment : Fragment() {
                 Pair(usCaught, 40)
             }
             else -> {
-                val countryCaught = caughtAnimals.count { animal ->
+                val countryCaught = uniqueCaughtAnimals.count { animal ->  // FIXED: Count unique animals
                     when (filter) {
                         "Canada" -> animal.region.contains("Canada")
                         "Mexico" -> animal.region.contains("Mexico")
@@ -234,7 +245,12 @@ class CollectionFragment : Fragment() {
     }
 
     private fun showAnimalDetails(animal: Animal) {
-        val dialog = AnimalDetailDialog(animal)
+        // Get the count of how many times this animal was caught
+        val allCaughtAnimals = DataManager.getCollection()
+        val count = allCaughtAnimals.count { it.id == animal.id }
+
+        // Pass the count to the dialog if you want to show it
+        val dialog = AnimalDetailDialog(animal, )
         dialog.show(childFragmentManager, "animal_detail")
     }
 
