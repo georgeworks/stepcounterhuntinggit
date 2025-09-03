@@ -41,6 +41,32 @@
         android:layout_height="48dp"
         android:layout_marginBottom="24dp" />
 
+    <LinearLayout
+        android:id="@+id/region_progress_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#F0F0F0"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Animals caught in this region: "
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/region_progress_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0/10"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/holo_blue_dark" />
+    </LinearLayout>
+
     <!-- Add top margin to move lure count down from status bar -->
     <TextView
         android:id="@+id/lure_count_text"

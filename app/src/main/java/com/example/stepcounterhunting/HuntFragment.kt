@@ -53,6 +53,7 @@ class HuntFragment : Fragment(), SensorEventListener {
     private var lastNotificationUpdate = 0L
     private var isUsingLure = false
     private lateinit var lureCountText: TextView
+    private lateinit var regionProgressText: TextView
 
     companion object {
         const val STEPS_REQUIRED = 100  // Set low for testing
@@ -81,6 +82,7 @@ class HuntFragment : Fragment(), SensorEventListener {
         progressBar = view.findViewById(R.id.progress_bar)
         currentRegionText = view.findViewById(R.id.current_region_text)
         huntStatusText = view.findViewById(R.id.hunt_status_text)
+        regionProgressText = view.findViewById(R.id.region_progress_text)
         updateLureDisplay()
         // Initialize sensor and preferences
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -212,10 +214,12 @@ class HuntFragment : Fragment(), SensorEventListener {
             ) {
                 selectedRegionName = regions[position]
                 checkForRegionChange()
+                updateRegionProgress()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+        updateRegionProgress()
     }
 
     private fun checkForRegionChange() {
@@ -241,6 +245,77 @@ class HuntFragment : Fragment(), SensorEventListener {
                         android.R.color.holo_red_light
                     )
                 )
+            }
+        }
+    }
+
+    private fun updateRegionProgress() {
+        val selectedCountry = countrySpinner.selectedItem as? String
+        val selectedRegionName = regionSpinner.selectedItem as? String
+
+        if (selectedCountry == null || selectedRegionName == null) {
+            regionProgressText.text = "0/?"
+            return
+        }
+
+        // Get all caught animals
+        val caughtAnimals = DataManager.getCollection()
+        val uniqueCaughtAnimals = caughtAnimals.distinctBy { it.id }
+
+        when (selectedCountry) {
+            "United States" -> {
+                // Find the selected US region
+                val selectedRegion = DataManager.usRegions.find { it.name == selectedRegionName }
+                if (selectedRegion != null) {
+                    // Count how many animals from this region the player has caught
+                    val caughtInRegion = uniqueCaughtAnimals.count { caughtAnimal ->
+                        selectedRegion.animals.any { it.id == caughtAnimal.id }
+                    }
+                    val totalInRegion = selectedRegion.animals.size
+
+                    regionProgressText.text = "$caughtInRegion/$totalInRegion"
+
+                    // Optional: Change color based on progress
+                    regionProgressText.setTextColor(when {
+                        caughtInRegion == totalInRegion ->
+                            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+                        caughtInRegion >= totalInRegion / 2 ->
+                            ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark)
+                        else ->
+                            ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark)
+                    })
+                } else {
+                    regionProgressText.text = "0/10"
+                }
+            }
+            else -> {
+                // For non-US countries, we use default animals (assuming 5 per country)
+                val caughtInCountry = uniqueCaughtAnimals.count { animal ->
+                    when (selectedCountry) {
+                        "Canada" -> animal.region.contains("Canada") &&
+                                (selectedRegionName in animal.region)
+                        "Mexico" -> animal.region.contains("Mexico") &&
+                                (selectedRegionName in animal.region)
+                        "Brazil" -> animal.region.contains("Brazil") &&
+                                (selectedRegionName in animal.region)
+                        "United Kingdom" -> (animal.region.contains("United Kingdom") ||
+                                animal.region.contains(selectedRegionName))
+                        else -> false
+                    }
+                }
+
+                // Assume 5 animals per region for non-US countries
+                regionProgressText.text = "$caughtInCountry/5"
+
+                // Optional: Change color based on progress
+                regionProgressText.setTextColor(when {
+                    caughtInCountry >= 5 ->
+                        ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+                    caughtInCountry >= 3 ->
+                        ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark)
+                    else ->
+                        ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark)
+                })
             }
         }
     }
@@ -846,6 +921,7 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Update lure display after continuing
         updateLureDisplay()
+        updateRegionProgress()
         updateUI()
     }
 
@@ -875,6 +951,7 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Always update lure display when fragment resumes
         updateLureDisplay()
+        updateRegionProgress()
 
         if (isHunting) {
             // Always check for latest step count from service
