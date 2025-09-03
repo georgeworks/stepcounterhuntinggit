@@ -11,6 +11,7 @@ import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import android.app.PendingIntent
 
 class StepCounterService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
@@ -67,25 +68,34 @@ class StepCounterService : Service(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
-            // Initialize on first reading
+            val isHunting = prefs.getBoolean("is_hunting", false)
+            if (!isHunting) return
+
+            val initialStepCount = prefs.getInt("initial_step_count", -1)
             if (initialStepCount < 0) {
-                initialStepCount = event.values[0].toInt()
-                prefs.edit().putInt("initial_step_count", initialStepCount).apply()
+                prefs.edit().putInt("initial_step_count", event.values[0].toInt()).apply()
+                return
             }
 
-            // Calculate current steps
             val currentSteps = event.values[0].toInt() - initialStepCount
 
-            // Save to preferences
-            prefs.edit().putInt("current_steps", currentSteps).apply()
+            // Cap steps at STEPS_REQUIRED to prevent over-counting
+            val cappedSteps = currentSteps.coerceAtMost(STEPS_REQUIRED)
+
+            prefs.edit().putInt("current_steps", cappedSteps).apply()
 
             // Update notification
-            updateNotification(currentSteps)
+            updateNotification()
 
-            // Check if goal reached
-            if (currentSteps >= STEPS_REQUIRED && !prefs.getBoolean("hunt_completed", false)) {
-                prefs.edit().putBoolean("hunt_completed", true).apply()
-                showCompletionNotification()
+            // Stop sensor updates if goal reached
+            if (cappedSteps >= STEPS_REQUIRED) {
+                val huntCompleted = prefs.getBoolean("hunt_completed", false)
+                if (!huntCompleted) {
+                    prefs.edit().putBoolean("hunt_completed", true).apply()
+                    // Optionally unregister sensor to save battery
+                    // sensorManager?.unregisterListener(this)
+                    // Note: Don't unregister if you want to continue tracking for stats
+                }
             }
         }
     }
@@ -182,6 +192,67 @@ class StepCounterService : Service(), SensorEventListener {
             .build()
 
         notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+    private fun updateNotification() {
+        val currentSteps = prefs.getInt("current_steps", 0)
+        val region = prefs.getString("current_region", "Unknown") ?: "Unknown"
+        val isUsingLure = prefs.getBoolean("using_lure", false)
+
+        // Create the pending intent for opening MainActivity
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Check if hunt is completed
+        if (currentSteps >= STEPS_REQUIRED) {
+            // Show completion notification
+            val completionNotification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("🎉 Goal Reached!")
+                .setContentText("You've caught an animal! Tap to see your catch!")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true) // Auto dismiss when tapped
+                .setOngoing(false) // Not persistent anymore
+                .setSubText("Hunt complete in $region")
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID, completionNotification)
+
+            // Mark hunt as completed
+            prefs.edit().putBoolean("hunt_completed", true).apply()
+        } else {
+            // Show progress notification
+            val progress = (currentSteps * 100) / STEPS_REQUIRED
+            val stepsRemaining = (STEPS_REQUIRED - currentSteps).coerceAtLeast(0)
+
+            val progressTitle = if (isUsingLure) {
+                "🎯 Hunting in $region (Lure Active)"
+            } else {
+                "🦌 Hunting in $region"
+            }
+
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(progressTitle)
+                .setContentText("Progress: $currentSteps / $STEPS_REQUIRED steps")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true) // Persistent while hunting
+                .setSilent(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setProgress(STEPS_REQUIRED, currentSteps, false)
+                .setSubText("$stepsRemaining steps to go • ${progress}% complete")
+                .setOnlyAlertOnce(true)
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        }
     }
 
     override fun onDestroy() {
