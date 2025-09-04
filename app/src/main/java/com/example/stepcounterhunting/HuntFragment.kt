@@ -343,6 +343,28 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun restoreHuntState() {
+        // Check if this is first app launch
+        val isFirstLaunch = prefs.getBoolean("first_launch_complete", true)
+        if (isFirstLaunch) {
+            // First time opening app - ensure clean state
+            prefs.edit()
+                .putBoolean("first_launch_complete", false)
+                .putBoolean("is_hunting", false)
+                .putInt("current_steps", 0)
+                .putInt("initial_step_count", -1)
+                .putBoolean("hunt_completed", false)
+                .remove("current_country")
+                .remove("current_region")
+                .apply()
+
+            val dataPrefs = requireContext().getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
+            dataPrefs.edit()
+                .putInt("lure_count", 0)
+                .putString("collection", "")
+                .putString("explored_regions", "")
+                .apply()
+        }
+
         isHunting = prefs.getBoolean("is_hunting", false)
         stepCount = prefs.getInt("current_steps", 0)
         initialStepCount = prefs.getInt("initial_step_count", -1)
@@ -353,7 +375,7 @@ class HuntFragment : Fragment(), SensorEventListener {
             serviceCompletedHunt && !hasCompletedCurrentHunt && stepCount >= STEPS_REQUIRED
         isUsingLure = prefs.getBoolean("using_lure", false)
 
-        if (isUsingLure) {
+        if (isUsingLure && isHunting) {  // Only show lure active if actually hunting
             huntStatusText.text = "🎯 LURE ACTIVE! Hunt in progress!"
             progressBar.progressTintList = android.content.res.ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light)
@@ -410,26 +432,21 @@ class HuntFragment : Fragment(), SensorEventListener {
                 // Check if we need to show the catch dialog
                 if (needsToShowCatch) {
                     huntStatusText.text = "Goal reached! Opening your catch..."
-                    // Don't set hasCompletedCurrentHunt yet - let catchAnimal do it
-                    // Delay slightly to ensure UI is ready
                     view?.postDelayed({
                         if (!isShowingDialog && currentRegion != null) {
                             catchAnimal()
                         }
                     }, 500)
                 } else if (serviceCompletedHunt) {
-                    // Already shown before, just update state
                     hasCompletedCurrentHunt = true
                     huntStatusText.text = "Goal reached! Continue hunting or stop to reset."
                 } else {
                     huntStatusText.text = "Hunt in progress!"
-                    // Re-register sensor listener only if hunt not completed
                     stepSensor?.let {
                         sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                     }
                 }
 
-                // Show notification if hunting and not completed
                 if (!serviceCompletedHunt) {
                     showNotification()
                 }
@@ -437,36 +454,46 @@ class HuntFragment : Fragment(), SensorEventListener {
                 // Invalid saved state, reset
                 isHunting = false
                 prefs.edit().putBoolean("is_hunting", false).apply()
+
+                // Set UI to not hunting state
+                startHuntButton.text = "Start Hunting"
+                startHuntButton.setBackgroundColor(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.holo_green_dark
+                    )
+                )
             }
         } else {
-            // Not hunting - set spinners to last selected or current hunting region
+            // Not hunting - ensure UI is in correct state
+            startHuntButton.text = "Start Hunting"
+            startHuntButton.setBackgroundColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    android.R.color.holo_green_dark
+                )
+            )
+            currentRegionText.text = ""
+            huntStatusText.text = ""
+
+            // Set spinners to last selected or default
             val lastCountry = prefs.getString("last_selected_country", null)
-            val currentHuntCountry = prefs.getString("current_country", null)
+            val defaultCountry = lastCountry ?: "United States"
 
-            // Priority: current hunting region > last selected > default
-            val defaultCountry = currentHuntCountry ?: lastCountry ?: "United States"
-
-            // Set country spinner to preferred default
             val countryAdapter = countrySpinner.adapter
             if (countryAdapter != null) {
                 for (i in 0 until countryAdapter.count) {
                     if (countryAdapter.getItem(i) == defaultCountry) {
                         countrySpinner.setSelection(i)
 
-                        // After setting country, set region preference
                         countrySpinner.post {
                             val lastRegion = prefs.getString("last_selected_region_$defaultCountry", null)
-                            val currentHuntRegion = if (currentHuntCountry == defaultCountry) {
-                                prefs.getString("current_region", null)
-                            } else null
 
-                            val defaultRegion = currentHuntRegion ?: lastRegion
-
-                            if (defaultRegion != null) {
+                            if (lastRegion != null) {
                                 val regionAdapter = regionSpinner.adapter
                                 if (regionAdapter != null) {
                                     for (j in 0 until regionAdapter.count) {
-                                        if (regionAdapter.getItem(j) == defaultRegion) {
+                                        if (regionAdapter.getItem(j) == lastRegion) {
                                             regionSpinner.setSelection(j)
                                             break
                                         }
@@ -478,14 +505,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                     }
                 }
             }
-
-            startHuntButton.text = "Start Hunting"
-            startHuntButton.setBackgroundColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    android.R.color.holo_green_dark
-                )
-            )
         }
 
         updateUI()
@@ -737,12 +756,28 @@ class HuntFragment : Fragment(), SensorEventListener {
             if (initialStepCount < 0) {
                 initialStepCount = event.values[0].toInt()
                 prefs.edit().putInt("initial_step_count", initialStepCount).apply()
+                // Important: Set step count to 0 on initialization
+                stepCount = 0
+                prefs.edit().putInt("current_steps", 0).apply()
+                updateUI()
+                return // Exit early on initialization
             }
 
             stepCount = event.values[0].toInt() - initialStepCount
 
-            // Save current steps (service will read these)
-            prefs.edit().putInt("current_steps", stepCount).apply()
+            // Protection against negative values (can happen after reinstall)
+            if (stepCount < 0) {
+                // Reset the initial count to current sensor value
+                initialStepCount = event.values[0].toInt()
+                stepCount = 0
+                prefs.edit()
+                    .putInt("initial_step_count", initialStepCount)
+                    .putInt("current_steps", 0)
+                    .apply()
+            } else {
+                // Save current steps only if valid
+                prefs.edit().putInt("current_steps", stepCount).apply()
+            }
 
             // Check if we've reached the goal and haven't already caught an animal
             if (stepCount >= STEPS_REQUIRED && !hasCompletedCurrentHunt && !isShowingDialog) {
@@ -946,7 +981,9 @@ class HuntFragment : Fragment(), SensorEventListener {
     private fun updateLureDisplay() {
         val lureCount = DataManager.getLureCount()
         lureCountText.text = "Lures: $lureCount"
-        lureCountText.visibility = if (lureCount > 0) View.VISIBLE else View.GONE
+
+        // Always show the lure counter (remove the visibility condition)
+        lureCountText.visibility = View.VISIBLE
 
         // Force layout update
         lureCountText.parent?.requestLayout()

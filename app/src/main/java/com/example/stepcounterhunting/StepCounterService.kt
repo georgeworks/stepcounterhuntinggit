@@ -74,13 +74,26 @@ class StepCounterService : Service(), SensorEventListener {
             val initialStepCount = prefs.getInt("initial_step_count", -1)
             if (initialStepCount < 0) {
                 prefs.edit().putInt("initial_step_count", event.values[0].toInt()).apply()
+                prefs.edit().putInt("current_steps", 0).apply()  // Also set current_steps to 0
                 return
             }
 
             val currentSteps = event.values[0].toInt() - initialStepCount
 
+            // Protection against negative values
+            val validSteps = if (currentSteps < 0) {
+                // Reset if we get negative values (can happen after app reinstall)
+                prefs.edit()
+                    .putInt("initial_step_count", event.values[0].toInt())
+                    .putInt("current_steps", 0)
+                    .apply()
+                0
+            } else {
+                currentSteps
+            }
+
             // Cap steps at STEPS_REQUIRED to prevent over-counting
-            val cappedSteps = currentSteps.coerceAtMost(STEPS_REQUIRED)
+            val cappedSteps = validSteps.coerceAtMost(STEPS_REQUIRED)
 
             prefs.edit().putInt("current_steps", cappedSteps).apply()
 
