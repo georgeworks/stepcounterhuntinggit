@@ -104,11 +104,6 @@ class ProfileFragment : Fragment() {
         avgStepsPerHunt = view.findViewById(R.id.avg_steps_per_hunt)
         favoriteRegionValue = view.findViewById(R.id.favorite_region_value)
 
-        // Button
-        replayTutorialButton = view.findViewById(R.id.replay_tutorial_button)
-        replayTutorialButton?.setOnClickListener {
-            showReplayTutorialDialog()
-        }
     }
 
     private fun updateStats() {
@@ -224,30 +219,6 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    private fun showReplayTutorialDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Replay Tutorial")
-            .setMessage("Would you like to replay the hunting tutorial?")
-            .setPositiveButton("Yes") { _, _ ->
-                restartTutorialAndNavigate()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun restartTutorialAndNavigate() {
-        // Clear the tutorial completed flag
-        val prefs = requireContext().getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putBoolean("tutorial_completed", false)
-            .putBoolean("tutorial_in_progress", false)
-            .putInt("tutorial_current_step", 0)
-            .apply()
-
-        // Navigate to HuntFragment
-        // Adjust this based on your MainActivity navigation implementation
-        Toast.makeText(requireContext(), "Tutorial will start when you open the Hunt tab", Toast.LENGTH_SHORT).show()
-    }
 
     override fun onResume() {
         super.onResume()

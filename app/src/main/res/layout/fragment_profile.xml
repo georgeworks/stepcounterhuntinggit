@@ -481,15 +481,5 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
-
-        <!-- Action Buttons -->
-        <Button
-            android:id="@+id/replay_tutorial_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Replay Tutorial"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
-
     </LinearLayout>
 </ScrollView>
