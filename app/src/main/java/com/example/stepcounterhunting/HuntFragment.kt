@@ -55,6 +55,9 @@ class HuntFragment : Fragment(), SensorEventListener {
     private lateinit var lureCountText: TextView
     private lateinit var regionProgressText: TextView
 
+    private var tutorialOverlay: TutorialOverlay? = null  // Make nullable
+    private var hasPendingTutorial = false
+
     companion object {
         const val STEPS_REQUIRED = 100  // Set low for testing
         const val CHANNEL_ID = "StepHuntingChannel"
@@ -84,6 +87,7 @@ class HuntFragment : Fragment(), SensorEventListener {
         huntStatusText = view.findViewById(R.id.hunt_status_text)
         regionProgressText = view.findViewById(R.id.region_progress_text)
         updateLureDisplay()
+
         // Initialize sensor and preferences
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
         stepSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
@@ -122,6 +126,95 @@ class HuntFragment : Fragment(), SensorEventListener {
         }
 
         progressBar.max = STEPS_REQUIRED
+
+        // Initialize tutorial overlay
+        initializeTutorial()
+
+        // DON'T check for tutorial here - wait for onResume
+    }
+
+    private fun isRequestingPermissions(): Boolean {
+        // Check if we need to request permissions on first launch
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                !hasNotificationPermission() &&
+                prefs.getBoolean("first_app_launch", true)  // Check if this is truly first launch
+    }
+
+    private fun initializeTutorial() {
+        // Clean up any existing tutorial first
+        tutorialOverlay?.cleanup()
+
+        // Create new tutorial overlay
+        val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+        tutorialOverlay = TutorialOverlay(requireContext(), rootView)
+    }
+
+    private fun checkAndShowTutorial() {
+        val tutorialCompleted = prefs.getBoolean("tutorial_completed", false)
+
+        if (!tutorialCompleted && !isHunting && isViewsReady()) {
+            startTutorial()
+        }
+    }
+
+    private fun isViewsReady(): Boolean {
+        return try {
+            countrySpinner.adapter != null &&
+                    regionSpinner.adapter != null &&
+                    startHuntButton != null &&
+                    view != null
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun startTutorial() {
+        // Prevent multiple tutorial starts
+        if (hasPendingTutorial) return
+
+        // Check if tutorial overlay is properly initialized
+        if (tutorialOverlay == null) {
+            initializeTutorial()
+        }
+
+        hasPendingTutorial = true
+
+        tutorialOverlay?.startTutorial {
+            // Tutorial completed callback
+            Toast.makeText(requireContext(), "Tutorial completed! Ready to hunt!", Toast.LENGTH_SHORT).show()
+            hasPendingTutorial = false
+
+            // Make sure UI is in correct state after tutorial
+            resetUIAfterTutorial()
+        }
+    }
+
+    private fun resetUIAfterTutorial() {
+        startHuntButton.isEnabled = true
+        countrySpinner.isEnabled = true
+        regionSpinner.isEnabled = true
+
+        setupSpinners()
+        updateUI()
+    }
+
+    // Override onRequestPermissionsResult to handle tutorial after permissions
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        // Mark that this is no longer first app launch
+        prefs.edit().putBoolean("first_app_launch", false).apply()
+
+        // After permission dialog, check for tutorial
+        view?.postDelayed({
+            if (isResumed) {
+                checkAndShowTutorial()
+            }
+        }, 1000L)
     }
 
     private fun hasNotificationPermission(): Boolean {
@@ -196,6 +289,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 "Atlantic Canada",
                 "Northern Territories"
             )
+
             "Mexico" -> listOf("Northern Mexico", "Central Mexico", "Southern Mexico")
             "Brazil" -> listOf("North", "Northeast", "Central-West", "Southeast", "South")
             "United Kingdom" -> listOf("England", "Scotland", "Wales", "Northern Ireland")
@@ -298,30 +392,48 @@ class HuntFragment : Fragment(), SensorEventListener {
                     regionProgressText.text = "$caughtInRegion/$totalInRegion"
 
                     // Optional: Change color based on progress
-                    regionProgressText.setTextColor(when {
-                        caughtInRegion == totalInRegion ->
-                            ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
-                        caughtInRegion >= totalInRegion / 2 ->
-                            ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark)
-                        else ->
-                            ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark)
-                    })
+                    regionProgressText.setTextColor(
+                        when {
+                            caughtInRegion == totalInRegion ->
+                                ContextCompat.getColor(
+                                    requireContext(),
+                                    android.R.color.holo_green_dark
+                                )
+
+                            caughtInRegion >= totalInRegion / 2 ->
+                                ContextCompat.getColor(
+                                    requireContext(),
+                                    android.R.color.holo_orange_dark
+                                )
+
+                            else ->
+                                ContextCompat.getColor(
+                                    requireContext(),
+                                    android.R.color.holo_blue_dark
+                                )
+                        }
+                    )
                 } else {
                     regionProgressText.text = "0/10"
                 }
             }
+
             else -> {
                 // For non-US countries, we use default animals (assuming 5 per country)
                 val caughtInCountry = uniqueCaughtAnimals.count { animal ->
                     when (selectedCountry) {
                         "Canada" -> animal.region.contains("Canada") &&
                                 (selectedRegionName in animal.region)
+
                         "Mexico" -> animal.region.contains("Mexico") &&
                                 (selectedRegionName in animal.region)
+
                         "Brazil" -> animal.region.contains("Brazil") &&
                                 (selectedRegionName in animal.region)
+
                         "United Kingdom" -> (animal.region.contains("United Kingdom") ||
                                 animal.region.contains(selectedRegionName))
+
                         else -> false
                     }
                 }
@@ -330,20 +442,38 @@ class HuntFragment : Fragment(), SensorEventListener {
                 regionProgressText.text = "$caughtInCountry/5"
 
                 // Optional: Change color based on progress
-                regionProgressText.setTextColor(when {
-                    caughtInCountry >= 5 ->
-                        ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
-                    caughtInCountry >= 3 ->
-                        ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark)
-                    else ->
-                        ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark)
-                })
+                regionProgressText.setTextColor(
+                    when {
+                        caughtInCountry >= 5 ->
+                            ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_green_dark
+                            )
+
+                        caughtInCountry >= 3 ->
+                            ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_orange_dark
+                            )
+
+                        else ->
+                            ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark)
+                    }
+                )
             }
         }
     }
 
     private fun restoreHuntState() {
         // Check if this is first app launch
+        val isFirstAppLaunch = prefs.getBoolean("first_app_launch", true)
+
+        if (isFirstAppLaunch) {
+            // Mark that we've launched the app
+            prefs.edit().putBoolean("first_app_launch", false).apply()
+        }
+
+        // Check for first launch complete (different from first app launch)
         val isFirstLaunch = prefs.getBoolean("first_launch_complete", true)
         if (isFirstLaunch) {
             // First time opening app - ensure clean state
@@ -357,7 +487,8 @@ class HuntFragment : Fragment(), SensorEventListener {
                 .remove("current_region")
                 .apply()
 
-            val dataPrefs = requireContext().getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
+            val dataPrefs =
+                requireContext().getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
             dataPrefs.edit()
                 .putInt("lure_count", 0)
                 .putString("collection", "")
@@ -487,7 +618,8 @@ class HuntFragment : Fragment(), SensorEventListener {
                         countrySpinner.setSelection(i)
 
                         countrySpinner.post {
-                            val lastRegion = prefs.getString("last_selected_region_$defaultCountry", null)
+                            val lastRegion =
+                                prefs.getString("last_selected_region_$defaultCountry", null)
 
                             if (lastRegion != null) {
                                 val regionAdapter = regionSpinner.adapter
@@ -1041,10 +1173,24 @@ class HuntFragment : Fragment(), SensorEventListener {
 
     override fun onPause() {
         super.onPause()
+
+        // Save that we're pausing during tutorial if it's active
+        if (tutorialOverlay?.isActive() == true) {
+            // Tutorial will handle saving its state
+        }
+
         if (isHunting && !hasCompletedCurrentHunt) {
             sensorManager?.unregisterListener(this)
         }
     }
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Clean up tutorial overlay to prevent memory leaks
+        tutorialOverlay?.cleanup()
+        tutorialOverlay = null
+    }
+
 
     override fun onResume() {
         super.onResume()
@@ -1052,6 +1198,11 @@ class HuntFragment : Fragment(), SensorEventListener {
         // Always update lure display when fragment resumes
         updateLureDisplay()
         updateRegionProgress()
+
+        // Check for tutorial FIRST before handling hunt state
+        view?.postDelayed({
+            checkForTutorialOnResume()
+        }, 300L)
 
         if (isHunting) {
             // Always check for latest step count from service
@@ -1078,5 +1229,48 @@ class HuntFragment : Fragment(), SensorEventListener {
             }
         }
         isShowingDialog = false  // Reset dialog flag when resuming
+    }
+
+    private fun checkForTutorialOnResume() {
+        // Don't start multiple tutorials
+        if (hasPendingTutorial) return
+
+        val tutorialCompleted = prefs.getBoolean("tutorial_completed", false)
+        val tutorialInProgress = prefs.getBoolean("tutorial_in_progress", false)
+
+        // Show tutorial if not completed, or if it was in progress (interrupted)
+        if (!tutorialCompleted && !isHunting && isResumed && isViewsReady()) {
+            if (tutorialInProgress) {
+                // Tutorial was interrupted, ask user what to do
+                showTutorialResumeDialog()
+            } else {
+                // Start fresh tutorial
+                startTutorial()
+            }
+        }
+    }
+    private fun showTutorialResumeDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Continue Tutorial?")
+            .setMessage("You were in the middle of the tutorial. Would you like to continue where you left off or restart?")
+            .setPositiveButton("Continue") { _, _ ->
+                startTutorial()  // Will resume from saved step
+            }
+            .setNegativeButton("Restart") { _, _ ->
+                prefs.edit()
+                    .putBoolean("tutorial_in_progress", false)
+                    .putInt("tutorial_current_step", 0)
+                    .apply()
+                startTutorial()
+            }
+            .setNeutralButton("Skip Tutorial") { _, _ ->
+                prefs.edit()
+                    .putBoolean("tutorial_completed", true)
+                    .putBoolean("tutorial_in_progress", false)
+                    .putInt("tutorial_current_step", 0)
+                    .apply()
+            }
+            .setCancelable(false)
+            .show()
     }
 }
