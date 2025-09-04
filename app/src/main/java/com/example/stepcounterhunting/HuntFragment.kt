@@ -178,6 +178,9 @@ class HuntFragment : Fragment(), SensorEventListener {
                 selectedCountry = countries[position]
                 updateRegionSpinner(countries[position])
                 checkForRegionChange()
+
+                // Save the country selection as preference
+                prefs.edit().putString("last_selected_country", selectedCountry).apply()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -193,7 +196,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                 "Atlantic Canada",
                 "Northern Territories"
             )
-
             "Mexico" -> listOf("Northern Mexico", "Central Mexico", "Southern Mexico")
             "Brazil" -> listOf("North", "Northeast", "Central-West", "Southeast", "South")
             "United Kingdom" -> listOf("England", "Scotland", "Wales", "Northern Ireland")
@@ -215,10 +217,30 @@ class HuntFragment : Fragment(), SensorEventListener {
                 selectedRegionName = regions[position]
                 checkForRegionChange()
                 updateRegionProgress()
+
+                // Save the region selection as preference for this country
+                prefs.edit().putString("last_selected_region_$country", selectedRegionName).apply()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
+        // Try to restore the last selected region for this country
+        val currentHuntRegion = if (prefs.getString("current_country", null) == country) {
+            prefs.getString("current_region", null)
+        } else null
+
+        val lastSelectedRegion = prefs.getString("last_selected_region_$country", null)
+        val defaultRegion = currentHuntRegion ?: lastSelectedRegion
+
+        // Set the spinner to the preferred region if it exists
+        if (defaultRegion != null && regions.contains(defaultRegion)) {
+            val regionIndex = regions.indexOf(defaultRegion)
+            if (regionIndex >= 0) {
+                regionSpinner.setSelection(regionIndex)
+            }
+        }
+
         updateRegionProgress()
     }
 
@@ -330,12 +352,14 @@ class HuntFragment : Fragment(), SensorEventListener {
         val needsToShowCatch =
             serviceCompletedHunt && !hasCompletedCurrentHunt && stepCount >= STEPS_REQUIRED
         isUsingLure = prefs.getBoolean("using_lure", false)
+
         if (isUsingLure) {
             huntStatusText.text = "🎯 LURE ACTIVE! Hunt in progress!"
             progressBar.progressTintList = android.content.res.ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light)
             )
         }
+
         if (isHunting) {
             val savedCountry = prefs.getString("current_country", "") ?: ""
             val savedRegion = prefs.getString("current_region", "") ?: ""
@@ -415,7 +439,46 @@ class HuntFragment : Fragment(), SensorEventListener {
                 prefs.edit().putBoolean("is_hunting", false).apply()
             }
         } else {
-            // Not hunting, ensure button shows correct state
+            // Not hunting - set spinners to last selected or current hunting region
+            val lastCountry = prefs.getString("last_selected_country", null)
+            val currentHuntCountry = prefs.getString("current_country", null)
+
+            // Priority: current hunting region > last selected > default
+            val defaultCountry = currentHuntCountry ?: lastCountry ?: "United States"
+
+            // Set country spinner to preferred default
+            val countryAdapter = countrySpinner.adapter
+            if (countryAdapter != null) {
+                for (i in 0 until countryAdapter.count) {
+                    if (countryAdapter.getItem(i) == defaultCountry) {
+                        countrySpinner.setSelection(i)
+
+                        // After setting country, set region preference
+                        countrySpinner.post {
+                            val lastRegion = prefs.getString("last_selected_region_$defaultCountry", null)
+                            val currentHuntRegion = if (currentHuntCountry == defaultCountry) {
+                                prefs.getString("current_region", null)
+                            } else null
+
+                            val defaultRegion = currentHuntRegion ?: lastRegion
+
+                            if (defaultRegion != null) {
+                                val regionAdapter = regionSpinner.adapter
+                                if (regionAdapter != null) {
+                                    for (j in 0 until regionAdapter.count) {
+                                        if (regionAdapter.getItem(j) == defaultRegion) {
+                                            regionSpinner.setSelection(j)
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+
             startHuntButton.text = "Start Hunting"
             startHuntButton.setBackgroundColor(
                 ContextCompat.getColor(
