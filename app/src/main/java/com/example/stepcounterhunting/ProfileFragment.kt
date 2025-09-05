@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import androidx.core.content.ContextCompat
 
 class ProfileFragment : Fragment() {
 
@@ -147,8 +148,8 @@ class ProfileFragment : Fragment() {
         val currentLures = DataManager.getLureCount()
         val exploredRegions = DataManager.getExploredRegions()
 
-        // Calculate total regions (5 US regions + other countries)
-        val totalRegions = DataManager.usRegions.size + 20 // Rough estimate for other countries
+        // Calculate total regions
+        val totalRegions = DataManager.usRegions.size // Rough estimate for other countries
 
         // Update main stat cards
         totalStepsValue?.text = numberFormat.format(stats.totalSteps)
@@ -293,22 +294,28 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        // Update country stamps
+        // Update country stamps - only show United States for now
         countriesGrid?.let { grid ->
             grid.removeAllViews()
 
+            // Only United States is available at launch
             val countries = listOf(
-                CountryData("United States", DataManager.usRegions.flatMap { it.animals }),
-                CountryData("Canada", getCountryAnimals("Canada")),
-                CountryData("Mexico", getCountryAnimals("Mexico")),
-                CountryData("Brazil", getCountryAnimals("Brazil")),
-                CountryData("United Kingdom", getCountryAnimals("United Kingdom"))
+                CountryData("United States", DataManager.usRegions.flatMap { it.animals })
             )
 
             countries.forEach { country ->
                 val stampView = createCountryStampView(country.name, uniqueAnimals, country.animals)
                 grid.addView(stampView)
             }
+
+            // Add "More countries coming soon" text
+            val comingSoonText = TextView(context).apply {
+                text = "More countries coming soon!"
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+                setPadding(16, 8, 16, 8)
+            }
+            grid.addView(comingSoonText)
         }
     }
 
@@ -413,10 +420,10 @@ class ProfileFragment : Fragment() {
     private fun getCountryIcon(countryName: String): Int {
         return when (countryName) {
             "United States" -> android.R.drawable.star_big_on
-            "Canada" -> android.R.drawable.ic_menu_compass
-            "Mexico" -> android.R.drawable.ic_menu_mylocation
+            "China" -> android.R.drawable.ic_menu_compass
+            "Australia" -> android.R.drawable.ic_menu_mylocation
             "Brazil" -> android.R.drawable.ic_menu_gallery
-            "United Kingdom" -> android.R.drawable.ic_menu_info_details
+            "Madagascar" -> android.R.drawable.ic_menu_info_details
             else -> android.R.drawable.ic_menu_mapmode
         }
     }

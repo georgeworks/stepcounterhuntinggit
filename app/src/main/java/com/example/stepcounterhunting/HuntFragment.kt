@@ -254,10 +254,38 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun setupSpinners() {
-        // Setup country spinner
-        val countries = listOf("United States", "Canada", "Mexico", "Brazil", "United Kingdom")
-        val countryAdapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, countries)
+        // Setup country spinner with "Coming Soon" labels
+        val countries = listOf(
+            "United States",
+            "China (Coming Soon)",
+            "Australia (Coming Soon)",
+            "Brazil (Coming Soon)",
+            "Madagascar (Coming Soon)"
+        )
+
+        // Create custom adapter that disables non-US countries
+        val countryAdapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, countries) {
+            override fun isEnabled(position: Int): Boolean {
+                // Only United States (position 0) is enabled
+                return position == 0
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                val textView = view as TextView
+
+                if (position == 0) {
+                    // United States - enabled
+                    textView.setTextColor(ContextCompat.getColor(context, android.R.color.black))
+                } else {
+                    // Other countries - disabled/grayed out
+                    textView.setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                }
+
+                return view
+            }
+        }
+
         countryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         countrySpinner.adapter = countryAdapter
 
@@ -268,8 +296,15 @@ class HuntFragment : Fragment(), SensorEventListener {
                 position: Int,
                 id: Long
             ) {
-                selectedCountry = countries[position]
-                updateRegionSpinner(countries[position])
+                // Force selection to stay on United States if user somehow selects a disabled item
+                if (position != 0) {
+                    countrySpinner.setSelection(0)
+                    Toast.makeText(requireContext(), "This country is coming soon!", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                selectedCountry = "United States" // Always United States for now
+                updateRegionSpinner("United States")
                 checkForRegionChange()
 
                 // Save the country selection as preference
@@ -278,21 +313,24 @@ class HuntFragment : Fragment(), SensorEventListener {
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
+        // Set default selection to United States
+        countrySpinner.setSelection(0)
     }
 
     private fun updateRegionSpinner(country: String) {
         val regions = when (country) {
             "United States" -> DataManager.usRegions.map { it.name }
-            "Canada" -> listOf(
-                "Western Canada",
-                "Central Canada",
-                "Atlantic Canada",
+            "China" -> listOf(
+                "Western China",
+                "Central China",
+                "Atlantic China",
                 "Northern Territories"
             )
 
-            "Mexico" -> listOf("Northern Mexico", "Central Mexico", "Southern Mexico")
+            "Australia" -> listOf("Northern Australia", "Central Australia", "Southern Australia")
             "Brazil" -> listOf("North", "Northeast", "Central-West", "Southeast", "South")
-            "United Kingdom" -> listOf("England", "Scotland", "Wales", "Northern Ireland")
+            "Madagascar" -> listOf("England", "Scotland", "Wales", "Northern Ireland")
             else -> listOf()
         }
 
@@ -422,16 +460,16 @@ class HuntFragment : Fragment(), SensorEventListener {
                 // For non-US countries, we use default animals (assuming 5 per country)
                 val caughtInCountry = uniqueCaughtAnimals.count { animal ->
                     when (selectedCountry) {
-                        "Canada" -> animal.region.contains("Canada") &&
+                        "China" -> animal.region.contains("China") &&
                                 (selectedRegionName in animal.region)
 
-                        "Mexico" -> animal.region.contains("Mexico") &&
+                        "Australia" -> animal.region.contains("Australia") &&
                                 (selectedRegionName in animal.region)
 
                         "Brazil" -> animal.region.contains("Brazil") &&
                                 (selectedRegionName in animal.region)
 
-                        "United Kingdom" -> (animal.region.contains("United Kingdom") ||
+                        "Madagascar" -> (animal.region.contains("Madagascar") ||
                                 animal.region.contains(selectedRegionName))
 
                         else -> false

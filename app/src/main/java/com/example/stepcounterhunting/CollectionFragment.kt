@@ -17,7 +17,7 @@ class CollectionFragment : Fragment() {
     private lateinit var adapter: AnimalCollectionAdapter
     private lateinit var totalProgressText: TextView
     private lateinit var countryFilterSpinner: Spinner
-    private var selectedFilter = "All"
+    private var selectedFilter = "United States"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,18 +69,68 @@ class CollectionFragment : Fragment() {
     }
 
     private fun setupFilterSpinner() {
-        val filterOptions = listOf("All", "United States", "Canada", "Mexico", "Brazil", "United Kingdom")
-        val filterAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, filterOptions)
+        // Create custom adapter to show "(coming soon)" for unavailable countries
+        val filterOptions = listOf(
+            "United States",
+            "China (coming soon)",
+            "Australia (coming soon)",
+            "Brazil (coming soon)",
+            "Madagascar (coming soon)"
+        )
+
+        // Create custom ArrayAdapter to handle disabled items
+        val filterAdapter = object : ArrayAdapter<String>(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            filterOptions
+        ) {
+            override fun isEnabled(position: Int): Boolean {
+                // Only United States (position 0) is enabled
+                return position == 0
+            }
+
+            override fun getDropDownView(
+                position: Int,
+                convertView: View?,
+                parent: ViewGroup
+            ): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                val textView = view as? TextView
+
+                if (position != 0) {
+                    // Gray out disabled items
+                    textView?.setTextColor(android.graphics.Color.GRAY)
+                } else {
+                    // Normal color for enabled item
+                    textView?.setTextColor(android.graphics.Color.BLACK)
+                }
+
+                return view
+            }
+        }
+
         filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         countryFilterSpinner.adapter = filterAdapter
 
-        // Set default to "All"
+        // Set default to "United States" (position 0)
         countryFilterSpinner.setSelection(0)
 
         countryFilterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedFilter = filterOptions[position]
-                refreshCollection()
+                // Only allow selecting United States
+                if (position == 0) {
+                    selectedFilter = "United States"
+                    refreshCollection()
+                } else {
+                    // If user tries to select a "coming soon" country, show message and revert to United States
+                    android.widget.Toast.makeText(
+                        context,
+                        "This country is coming soon!",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    // Reset to United States
+                    countryFilterSpinner.setSelection(0)
+                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -105,17 +155,12 @@ class CollectionFragment : Fragment() {
         val items = mutableListOf<CollectionItem>()
 
         when (filter) {
-            "All" -> {
-                // Show all regions
-                addUSRegions(items, caughtAnimalIds, animalCounts)
-                addOtherCountries(items, uniqueCaughtAnimals, animalCounts)
-            }
             "United States" -> {
                 // Show only US regions
                 addUSRegions(items, caughtAnimalIds, animalCounts)
             }
             else -> {
-                // Show specific country
+                // Show specific country (though this shouldn't be reached now)
                 addSpecificCountry(items, filter, uniqueCaughtAnimals, animalCounts)
             }
         }
@@ -138,7 +183,7 @@ class CollectionFragment : Fragment() {
     }
 
     private fun addOtherCountries(items: MutableList<CollectionItem>, uniqueCaughtAnimals: List<Animal>, animalCounts: Map<String, Int>) {
-        val otherCountries = listOf("Canada", "Mexico", "Brazil", "United Kingdom")
+        val otherCountries = listOf("China", "Australia", "Brazil", "Madagascar")
         otherCountries.forEach { country ->
             val caughtInCountry = uniqueCaughtAnimals.filter { it.region.contains(country) }
 
@@ -158,10 +203,10 @@ class CollectionFragment : Fragment() {
         val defaultAnimals = DataManager.getDefaultAnimals()
         val caughtInCountry = uniqueCaughtAnimals.filter {
             when (country) {
-                "Canada" -> it.region.contains("Canada")
-                "Mexico" -> it.region.contains("Mexico")
+                "China" -> it.region.contains("China")
+                "Australia" -> it.region.contains("Australia")
                 "Brazil" -> it.region.contains("Brazil")
-                "United Kingdom" -> it.region.contains("United Kingdom") || it.region.contains("England") ||
+                "Madagascar" -> it.region.contains("Madagascar") || it.region.contains("England") ||
                         it.region.contains("Scotland") || it.region.contains("Wales") ||
                         it.region.contains("Northern Ireland")
                 else -> false
@@ -210,13 +255,8 @@ class CollectionFragment : Fragment() {
         val uniqueCaughtAnimals = allCaughtAnimals.distinctBy { it.id }
 
         val (caught, total) = when (filter) {
-            "All" -> {
-                val totalCaught = uniqueCaughtAnimals.size  // FIXED: Count unique animals only
-                val totalPossible = 40 + (5 * 4) // 40 US + 5 each for 4 other countries
-                Pair(totalCaught, totalPossible)
-            }
             "United States" -> {
-                val usCaught = uniqueCaughtAnimals.count { animal ->  // FIXED: Count unique animals
+                val usCaught = uniqueCaughtAnimals.count { animal ->  // Count unique animals
                     DataManager.usRegions.any { region ->
                         region.animals.any { it.id == animal.id }
                     }
@@ -224,12 +264,12 @@ class CollectionFragment : Fragment() {
                 Pair(usCaught, 40)
             }
             else -> {
-                val countryCaught = uniqueCaughtAnimals.count { animal ->  // FIXED: Count unique animals
+                val countryCaught = uniqueCaughtAnimals.count { animal ->  // Count unique animals
                     when (filter) {
-                        "Canada" -> animal.region.contains("Canada")
-                        "Mexico" -> animal.region.contains("Mexico")
+                        "China" -> animal.region.contains("China")
+                        "Australia" -> animal.region.contains("Australia")
                         "Brazil" -> animal.region.contains("Brazil")
-                        "United Kingdom" -> animal.region.contains("United Kingdom") ||
+                        "Madagascar" -> animal.region.contains("Madagascar") ||
                                 animal.region.contains("England") ||
                                 animal.region.contains("Scotland") ||
                                 animal.region.contains("Wales") ||
