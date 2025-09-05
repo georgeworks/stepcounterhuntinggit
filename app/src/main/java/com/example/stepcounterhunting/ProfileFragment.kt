@@ -2,10 +2,14 @@ package com.example.stepcounterhunting
 
 import android.app.AlertDialog
 import android.content.Context
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.GridLayout
+import android.widget.ImageView
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -48,6 +52,10 @@ class ProfileFragment : Fragment() {
     private var totalHuntsValue: TextView? = null
     private var avgStepsPerHunt: TextView? = null
     private var favoriteRegionValue: TextView? = null
+
+    // Stamp grid views
+    private var regionsGrid: GridLayout? = null
+    private var countriesGrid: GridLayout? = null
 
     // Button
     private var replayTutorialButton: Button? = null
@@ -104,6 +112,10 @@ class ProfileFragment : Fragment() {
         avgStepsPerHunt = view.findViewById(R.id.avg_steps_per_hunt)
         favoriteRegionValue = view.findViewById(R.id.favorite_region_value)
 
+        // Stamp grids
+        regionsGrid = view.findViewById(R.id.regions_grid)
+        countriesGrid = view.findViewById(R.id.countries_grid)
+
     }
 
     private fun updateStats() {
@@ -119,6 +131,10 @@ class ProfileFragment : Fragment() {
         // If we have the enhanced layout, update those views too
         if (totalStepsValue != null) {
             updateEnhancedStats(stats)
+        }
+        // Update stamp grids if they exist
+        if (regionsGrid != null || countriesGrid != null) {
+            updateCompletionStamps()
         }
     }
 
@@ -182,20 +198,64 @@ class ProfileFragment : Fragment() {
         val maxCount = rarityCount.values.maxOrNull() ?: 1
 
         // Update progress bars if they exist
-        commonProgress?.let { updateRarityBar(it, commonCount, rarityCount[Rarity.COMMON] ?: 0, maxCount) }
-        uncommonProgress?.let { updateRarityBar(it, uncommonCount, rarityCount[Rarity.UNCOMMON] ?: 0, maxCount) }
-        rareProgress?.let { updateRarityBar(it, rareCount, rarityCount[Rarity.RARE] ?: 0, maxCount) }
-        epicProgress?.let { updateRarityBar(it, epicCount, rarityCount[Rarity.EPIC] ?: 0, maxCount) }
-        legendaryProgress?.let { updateRarityBar(it, legendaryCount, rarityCount[Rarity.LEGENDARY] ?: 0, maxCount) }
+        commonProgress?.let {
+            updateRarityBar(
+                it,
+                commonCount,
+                rarityCount[Rarity.COMMON] ?: 0,
+                maxCount
+            )
+        }
+        uncommonProgress?.let {
+            updateRarityBar(
+                it,
+                uncommonCount,
+                rarityCount[Rarity.UNCOMMON] ?: 0,
+                maxCount
+            )
+        }
+        rareProgress?.let {
+            updateRarityBar(
+                it,
+                rareCount,
+                rarityCount[Rarity.RARE] ?: 0,
+                maxCount
+            )
+        }
+        epicProgress?.let {
+            updateRarityBar(
+                it,
+                epicCount,
+                rarityCount[Rarity.EPIC] ?: 0,
+                maxCount
+            )
+        }
+        legendaryProgress?.let {
+            updateRarityBar(
+                it,
+                legendaryCount,
+                rarityCount[Rarity.LEGENDARY] ?: 0,
+                maxCount
+            )
+        }
     }
 
-    private fun updateRarityBar(progressBar: ProgressBar, countText: TextView?, count: Int, maxCount: Int) {
+    private fun updateRarityBar(
+        progressBar: ProgressBar,
+        countText: TextView?,
+        count: Int,
+        maxCount: Int
+    ) {
         val percentage = if (maxCount > 0) (count * 100) / maxCount else 0
         progressBar.progress = percentage
         countText?.text = count.toString()
     }
 
-    private fun updateHuntStatistics(stats: UserStats, collection: List<Animal>, exploredRegions: Set<String>) {
+    private fun updateHuntStatistics(
+        stats: UserStats,
+        collection: List<Animal>,
+        exploredRegions: Set<String>
+    ) {
         // Calculate total hunts (100 steps per hunt)
         val totalHunts = stats.totalSteps / 100
         totalHuntsValue?.text = totalHunts.toString()
@@ -219,10 +279,162 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    private fun updateCompletionStamps() {
+        val collection = DataManager.getCollection()
+        val uniqueAnimals = collection.distinctBy { it.id }
+
+        // Update US region stamps
+        regionsGrid?.let { grid ->
+            grid.removeAllViews()
+
+            DataManager.usRegions.forEach { region ->
+                val stampView = createStampView(region.name, uniqueAnimals, region.animals)
+                grid.addView(stampView)
+            }
+        }
+
+        // Update country stamps
+        countriesGrid?.let { grid ->
+            grid.removeAllViews()
+
+            val countries = listOf(
+                CountryData("United States", DataManager.usRegions.flatMap { it.animals }),
+                CountryData("Canada", getCountryAnimals("Canada")),
+                CountryData("Mexico", getCountryAnimals("Mexico")),
+                CountryData("Brazil", getCountryAnimals("Brazil")),
+                CountryData("United Kingdom", getCountryAnimals("United Kingdom"))
+            )
+
+            countries.forEach { country ->
+                val stampView = createCountryStampView(country.name, uniqueAnimals, country.animals)
+                grid.addView(stampView)
+            }
+        }
+    }
+
+    private fun createStampView(
+        regionName: String,
+        collectedAnimals: List<Animal>,
+        regionAnimals: List<Animal>
+    ): View {
+        val inflater = LayoutInflater.from(context)
+        val stampView = inflater.inflate(R.layout.stamp_item, null)
+
+        val icon = stampView.findViewById<ImageView>(R.id.stamp_icon)
+        val name = stampView.findViewById<TextView>(R.id.stamp_name)
+        val progress = stampView.findViewById<TextView>(R.id.stamp_progress)
+
+        // Count how many animals from this region the player has caught
+        val caughtInRegion = collectedAnimals.count { caughtAnimal ->
+            regionAnimals.any { it.id == caughtAnimal.id }
+        }
+        val totalInRegion = regionAnimals.size
+        val isComplete = caughtInRegion == totalInRegion
+
+        // Set name
+        name.text = regionName.replace(" ", "\n") // Break long names
+
+        // Set progress
+        progress.text = "$caughtInRegion/$totalInRegion"
+
+        // Set icon and colors based on completion
+        setStampAppearance(icon, isComplete, getRegionIcon(regionName))
+
+        return stampView
+    }
+
+    private fun createCountryStampView(countryName: String, collectedAnimals: List<Animal>, countryAnimals: List<Animal>): View {
+        val inflater = LayoutInflater.from(context)
+        val stampView = inflater.inflate(R.layout.stamp_item, null)
+
+        val icon = stampView.findViewById<ImageView>(R.id.stamp_icon)
+        val name = stampView.findViewById<TextView>(R.id.stamp_name)
+        val progress = stampView.findViewById<TextView>(R.id.stamp_progress)
+
+        // Count collected animals for this country
+        val caughtInCountry = collectedAnimals.count { animal ->
+            if (countryName == "United States") {
+                DataManager.usRegions.any { region ->
+                    region.animals.any { it.id == animal.id }
+                }
+            } else {
+                animal.region.contains(countryName)
+            }
+        }
+
+        val totalInCountry = if (countryName == "United States") {
+            DataManager.usRegions.flatMap { it.animals }.size
+        } else {
+            5 // Default animals per country
+        }
+
+        val isComplete = caughtInCountry == totalInCountry
+
+        // Set name
+        name.text = countryName.replace(" ", "\n")
+
+        // Set progress
+        progress.text = "$caughtInCountry/$totalInCountry"
+
+        // Set icon and colors - only show as complete when ALL animals are caught
+        setStampAppearance(icon, isComplete, getCountryIcon(countryName))
+
+        return stampView
+    }
+
+    private fun setStampAppearance(icon: ImageView, isComplete: Boolean, iconResource: Int) {
+        icon.setImageResource(iconResource)
+
+        if (!isComplete) {
+            // Make it grayscale/silhouette
+            val matrix = ColorMatrix()
+            matrix.setSaturation(0f) // Remove color
+            val filter = ColorMatrixColorFilter(matrix)
+            icon.colorFilter = filter
+            icon.alpha = 0.3f
+        } else {
+            // Full color for completed
+            icon.colorFilter = null
+            icon.alpha = 1.0f
+        }
+    }
+
+    private fun getRegionIcon(regionName: String): Int {
+        return when (regionName) {
+            "The Appalachians" -> android.R.drawable.ic_menu_mapmode
+            "Desert Southwest" -> android.R.drawable.ic_menu_compass
+            "Pacific Northwest" -> android.R.drawable.ic_menu_gallery
+            "Great Plains" -> android.R.drawable.ic_menu_view
+            "Far North" -> android.R.drawable.ic_menu_myplaces
+            else -> android.R.drawable.ic_menu_mapmode
+        }
+    }
+
+    private fun getCountryIcon(countryName: String): Int {
+        return when (countryName) {
+            "United States" -> android.R.drawable.star_big_on
+            "Canada" -> android.R.drawable.ic_menu_compass
+            "Mexico" -> android.R.drawable.ic_menu_mylocation
+            "Brazil" -> android.R.drawable.ic_menu_gallery
+            "United Kingdom" -> android.R.drawable.ic_menu_info_details
+            else -> android.R.drawable.ic_menu_mapmode
+        }
+    }
+
+    private fun getCountryAnimals(countryName: String): List<Animal> {
+        // For non-US countries, we're using the default animals
+        // In a real app, you'd have specific animals for each country
+        return DataManager.getDefaultAnimals()
+    }
+
+    data class CountryData(val name: String, val animals: List<Animal>)
 
     override fun onResume() {
         super.onResume()
         updateStats()
     }
 }
+
+
+
 
