@@ -759,7 +759,7 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         if (hasCompletedCurrentHunt && isHunting) {
             huntStatusText.text =
-                "Goal reached! Continue hunting for another animal or stop to reset."
+                ""
         }
     }
 
