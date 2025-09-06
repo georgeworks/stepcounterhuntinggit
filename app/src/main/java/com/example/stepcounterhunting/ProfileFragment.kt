@@ -288,15 +288,15 @@ class ProfileFragment : Fragment() {
         val duplicatesFound = collection.size - uniqueAnimals.size
         luresEarnedTotal?.text = "$duplicatesFound earned total"
 
-        // Update rarity distribution
-        updateRarityDistribution(uniqueAnimals)
+        // Update rarity distribution - NOW USING FULL COLLECTION (INCLUDING DUPLICATES)
+        updateRarityDistribution(collection)  // Changed from uniqueAnimals to collection
 
         // Update hunt statistics
         updateHuntStatistics(stats, collection, exploredRegions)
     }
 
-    private fun updateRarityDistribution(uniqueAnimals: List<Animal>) {
-        // Calculate rarity counts
+    private fun updateRarityDistribution(allCatches: List<Animal>) {  // Renamed parameter for clarity
+        // Calculate rarity counts INCLUDING DUPLICATES
         val rarityCount = mutableMapOf(
             Rarity.COMMON to 0,
             Rarity.UNCOMMON to 0,
@@ -304,7 +304,8 @@ class ProfileFragment : Fragment() {
             Rarity.LEGENDARY to 0
         )
 
-        uniqueAnimals.forEach { animal ->
+        // Count ALL catches, including duplicates
+        allCatches.forEach { animal ->
             rarityCount[animal.rarity] = rarityCount[animal.rarity]!! + 1
         }
 
