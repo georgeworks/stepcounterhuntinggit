@@ -140,7 +140,7 @@ object DataManager {
                 "default_4",
                 "Epic Animal",
                 "Very special",
-                Rarity.EPIC,
+                Rarity.RARE,
                 "Default",
                 "This creature has abilities that seem almost supernatural!"
             ),
@@ -189,7 +189,7 @@ object DataManager {
                     "app_4",
                     "Timber Rattlesnake",
                     "Iconic forest viper",
-                    Rarity.UNCOMMON,
+                    Rarity.COMMON,
                     "The Appalachians",
                     "Velvet-black tails and banded coils blend into leaf litter on sun-warmed outcrops. They overwinter in communal dens for decades. Calm by nature, most rattles are warnings—step back and everyone’s happy."
                 ),
@@ -206,7 +206,7 @@ object DataManager {
                     "app_6",
                     "Hellbender",
                     "Giant Appalachian salamander",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "The Appalachians",
                     "North America’s largest fully aquatic salamander hides under boulders in cold, fast rivers. It “breathes” through skin folds that need oxygen-rich water. Clean streams mean healthy hellbenders."
                 ),
@@ -214,7 +214,7 @@ object DataManager {
                     "app_7",
                     "Cerulean Warbler",
                     "Sky-blue canopy singer",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "The Appalachians",
                     "This tiny migrant nests high in mature forest canopies, a buzzy trill floating from ridge to ridge. Habitat loss hit it hard, making intact Appalachians vital. Spotting one feels like catching a scrap of sky."
                 ),
@@ -223,7 +223,7 @@ object DataManager {
                     "app_8",
                     "Virginia Big-eared Bat",
                     "Cave bat with huge ears",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "The Appalachians",
                     "Endangered bats that roost in cool caves and cliffline crevices. Their oversized ears swivel to home in on faint insect buzzes. Quiet caves and dark summer foraging routes keep colonies alive."
                 ),
@@ -231,7 +231,7 @@ object DataManager {
                     "app_9",
                     "Cheat Mountain Salamander",
                     "WV highland endemic",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "The Appalachians",
                     "Restricted to a handful of spruce-capped ridges in West Virginia. Lungless and moisture-loving, it absorbs oxygen through its skin. The species’ entire world fits within a few mountaintops."
                 ),
@@ -279,7 +279,7 @@ object DataManager {
                     "sw_4",
                     "Desert Tortoise",
                     "Slow-and-steady burrower",
-                    Rarity.UNCOMMON,
+                    Rarity.COMMON,
                     "Desert Southwest",
                     "Spending most of life underground, it rides out scorching summers and sudden floods. Spring greens fuel months of stored water. After a single good rain, it tanks up like a living canteen."
                 ),
@@ -296,7 +296,7 @@ object DataManager {
                     "sw_6",
                     "Gila Monster",
                     "Venomous beaded lizard",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Desert Southwest",
                     "A handful of truly venomous lizards on Earth, and this is one. Beadlike scales glow like desert mosaics. Slow and sturdy, but its bite means business—look, don’t touch."
                 ),
@@ -304,7 +304,7 @@ object DataManager {
                     "sw_7",
                     "Elf Owl",
                     "Tiny saguaro tenant",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Desert Southwest",
                     "The world’s smallest owl nests in abandoned woodpecker holes in cacti and mesquite. A faint squeak betrays a hunter barely taller than a smartphone. Crickets and moths power its midnight patrols."
                 ),
@@ -313,7 +313,7 @@ object DataManager {
                     "sw_8",
                     "Desert Bighorn Sheep",
                     "Cliff-climbing ungulate",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Desert Southwest",
                     "Rams clash at 40 mph on red-rock amphitheaters and walk away unshattered. Rubberized hooves grip slick sandstone where few predators can follow. Ewes teach lambs knife-edge ledges by spring."
                 ),
@@ -321,7 +321,7 @@ object DataManager {
                     "sw_9",
                     "Sonoran Pronghorn",
                     "Heat-hardened speedster",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Desert Southwest",
                     "A desert-adapted cousin of the plains form, built for blistering summers with sparse water. Bursts hit 60 mph—second only to cheetahs. Recovery herds straddle the U.S.–Mexico borderlands."
                 ),
@@ -369,7 +369,7 @@ object DataManager {
                     "pnw_4",
                     "Roosevelt Elk",
                     "Massive coastal elk",
-                    Rarity.UNCOMMON,
+                    Rarity.COMMON,
                     "Pacific Northwest",
                     "The largest elk subspecies browses river bottoms and ferny glades. Bulls bugle through mist that beads on mossy limbs. Herds step from fog like moving tree trunks."
                 ),
@@ -386,7 +386,7 @@ object DataManager {
                     "pnw_6",
                     "Northern Spotted Owl",
                     "Old-growth specialist",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Pacific Northwest",
                     "Silent wings thread through cathedral-tall Douglas-fir and cedar. It needs big, broken-canopy forests and deep shade. Barred owl competition and logging made it an icon of conservation."
                 ),
@@ -394,7 +394,7 @@ object DataManager {
                     "pnw_7",
                     "Marbled Murrelet",
                     "Seabird of giant trees",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Pacific Northwest",
                     "By day it fishes far offshore; by night it flies inland to nest on wide, mossy limbs of ancient conifers. The ‘nest’ is often just a moss pad 150 feet up. Its secret life stunned biologists when discovered."
                 ),
@@ -403,7 +403,7 @@ object DataManager {
                     "pnw_8",
                     "Sea Otter",
                     "Kelp-forest guardian",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Pacific Northwest",
                     "On its back with a stone anvil, it cracks urchins and clams like a pocket blacksmith. By trimming urchins, it protects kelp forests that blunt waves and shelter fish. Reintroductions are stitching the coast back together."
                 ),
@@ -411,7 +411,7 @@ object DataManager {
                     "pnw_9",
                     "Gray Whale",
                     "Coastal migrant",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Pacific Northwest",
                     "Each spring, whales trace a 10,000-mile commute between Mexico and the Arctic, spouting just offshore. Some linger to ‘bubble blast’ shrimp from muddy shallows. Headlands become front-row seats."
                 ),
@@ -459,7 +459,7 @@ object DataManager {
                     "gp_4",
                     "Burrowing Owl",
                     "Ground-nesting owl",
-                    Rarity.UNCOMMON,
+                    Rarity.COMMON,
                     "Great Plains",
                     "Long legs and bright eyes give a look of perpetual surprise. It nests in abandoned prairie dog tunnels and bobs its head at intruders. Dusk patrols skim like brown bumblebees over grass."
                 ),
@@ -476,7 +476,7 @@ object DataManager {
                     "gp_6",
                     "Swift Fox",
                     "Coyote-dodging sprinter",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Great Plains",
                     "Barely cat-sized, swift foxes streak between sage and bluestem at freeway speeds for their size. They den on slight rises to scan for danger. Reintroductions are repopulating old haunts."
                 ),
@@ -484,7 +484,7 @@ object DataManager {
                     "gp_7",
                     "Greater Prairie-Chicken",
                     "Booming dancer",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Great Plains",
                     "At dawn, males inflate orange neck sacs and stamp their feet in a rattling blur. Leks are grassland stages passed down for generations. Without tallgrass, the dance falls silent."
                 ),
@@ -493,7 +493,7 @@ object DataManager {
                     "gp_8",
                     "American Bison",
                     "Thundering prairie giant",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Great Plains",
                     "Once numbering in the millions, bison shaped grasslands from Texas to the Dakotas. Hooves churned soil and seeded wildflowers. Restored herds now anchor a rebounding prairie story."
                 ),
@@ -501,7 +501,7 @@ object DataManager {
                     "gp_9",
                     "Pronghorn",
                     "Plains speedster",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Great Plains",
                     "North America’s fastest land mammal sprints near 60 mph, built for big horizons. Huge eyes scan for coyotes across open sage. Ancient migration routes still thread the High Plains."
                 ),
@@ -549,7 +549,7 @@ object DataManager {
                     "north_4",
                     "Arctic Fox",
                     "Snow-white nomad",
-                    Rarity.UNCOMMON,
+                    Rarity.COMMON,
                     "Far North",
                     "Winter coats turn ghost-white, summer coats brown to match tundra seasons. When lemmings boom, fox families balloon too. They trail polar bears to scavenge leftovers on sea ice."
                 ),
@@ -566,7 +566,7 @@ object DataManager {
                     "north_6",
                     "Muskox",
                     "Shaggy Ice Age relic",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Far North",
                     "When danger looms, herds form a circle with calves in the center like a living fortress. Qiviut underwool is softer and warmer than cashmere. Tundra winds rattle their guard hairs like bead curtains."
                 ),
@@ -574,7 +574,7 @@ object DataManager {
                     "north_7",
                     "Snowy Owl",
                     "Silent tundra sentinel",
-                    Rarity.RARE,
+                    Rarity.UNCOMMON,
                     "Far North",
                     "Ghost-white owls scan for voles from drifted hummocks. Some winters they irrupt far south, stunning beachgoers and city birders alike. Feathered feet are down booties against razor wind."
                 ),
@@ -583,7 +583,7 @@ object DataManager {
                     "north_8",
                     "Moose",
                     "Giant of boreal forests",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Far North",
                     "Standing seven feet at the shoulder, moose wade into icy lakes for aquatic plants. They can swim for miles and dive to lake bottoms. Bull antlers can span six feet like living fences."
                 ),
@@ -591,7 +591,7 @@ object DataManager {
                     "north_9",
                     "Brown Bear (Coastal Grizzly)",
                     "Salmon-powered omnivore",
-                    Rarity.EPIC,
+                    Rarity.RARE,
                     "Far North",
                     "From Katmai to Kodiak, coastal bears grow enormous on salmon runs and sedge meadows. Cubs learn fishing like a family trade. A single tide can mean twenty fish for a skilled bear."
                 ),

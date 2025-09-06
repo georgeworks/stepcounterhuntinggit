@@ -44,8 +44,6 @@ class ProfileFragment : Fragment() {
     private var uncommonCount: TextView? = null
     private var rareProgress: ProgressBar? = null
     private var rareCount: TextView? = null
-    private var epicProgress: ProgressBar? = null
-    private var epicCount: TextView? = null
     private var legendaryProgress: ProgressBar? = null
     private var legendaryCount: TextView? = null
 
@@ -103,8 +101,6 @@ class ProfileFragment : Fragment() {
         uncommonCount = view.findViewById(R.id.uncommon_count)
         rareProgress = view.findViewById(R.id.rare_progress)
         rareCount = view.findViewById(R.id.rare_count)
-        epicProgress = view.findViewById(R.id.epic_progress)
-        epicCount = view.findViewById(R.id.epic_count)
         legendaryProgress = view.findViewById(R.id.legendary_progress)
         legendaryCount = view.findViewById(R.id.legendary_count)
 
@@ -188,7 +184,6 @@ class ProfileFragment : Fragment() {
             Rarity.COMMON to 0,
             Rarity.UNCOMMON to 0,
             Rarity.RARE to 0,
-            Rarity.EPIC to 0,
             Rarity.LEGENDARY to 0
         )
 
@@ -220,14 +215,6 @@ class ProfileFragment : Fragment() {
                 it,
                 rareCount,
                 rarityCount[Rarity.RARE] ?: 0,
-                maxCount
-            )
-        }
-        epicProgress?.let {
-            updateRarityBar(
-                it,
-                epicCount,
-                rarityCount[Rarity.EPIC] ?: 0,
                 maxCount
             )
         }

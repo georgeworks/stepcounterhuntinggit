@@ -14,7 +14,6 @@ enum class Rarity(val displayName: String, val weight: Int, val color: String) {
     COMMON("Common", 40, "#808080"),
     UNCOMMON("Uncommon", 30, "#00FF00"),
     RARE("Rare", 20, "#0080FF"),
-    EPIC("Epic", 8, "#800080"),
     LEGENDARY("Legendary", 2, "#FFD700")
 }
 

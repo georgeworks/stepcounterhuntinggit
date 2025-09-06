@@ -332,39 +332,6 @@
                     android:gravity="end" />
             </LinearLayout>
 
-            <!-- Epic -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:text="Epic"
-                    android:textSize="14sp" />
-
-                <ProgressBar
-                    android:id="@+id/epic_progress"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_gravity="center_vertical"
-                    android:max="100"
-                    android:progress="0"
-                    android:progressTint="@android:color/holo_purple" />
-
-                <TextView
-                    android:id="@+id/epic_count"
-                    android:layout_width="40dp"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textSize="14sp"
-                    android:gravity="end" />
-            </LinearLayout>
-
             <!-- Legendary -->
             <LinearLayout
                 android:layout_width="match_parent"

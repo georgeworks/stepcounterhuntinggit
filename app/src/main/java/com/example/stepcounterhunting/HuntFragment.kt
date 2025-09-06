@@ -1124,7 +1124,6 @@ class HuntFragment : Fragment(), SensorEventListener {
         // Filter to only Rare, Epic, and Legendary
         val rareAnimals = animals.filter {
             it.rarity == Rarity.RARE ||
-                    it.rarity == Rarity.EPIC ||
                     it.rarity == Rarity.LEGENDARY
         }
 
