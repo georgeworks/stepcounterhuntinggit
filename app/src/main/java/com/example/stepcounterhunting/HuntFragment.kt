@@ -699,7 +699,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 android.R.color.holo_green_dark
             )
         )
-        huntStatusText.text = "Hunt stopped"
+        huntStatusText.text = ""
         // Removed: currentRegionText.text = ""
 
         sensorManager?.unregisterListener(this)
