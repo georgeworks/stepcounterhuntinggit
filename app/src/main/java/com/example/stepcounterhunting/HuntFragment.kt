@@ -571,7 +571,7 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         AlertDialog.Builder(requireContext())
             .setTitle("Use a Lure?")
-            .setMessage("You have $lureCount lure${if (lureCount > 1) "s" else ""}.\n\nUsing a lure guarantees your next catch will be Rare or better!\n\nWould you like to use one?")
+            .setMessage("You have $lureCount lure${if (lureCount > 1) "s" else ""}.\n\nUsing a lure greatly increases your chances of catching rare and legendary animals!\n\nWould you like to use one?")
             .setPositiveButton("Yes, Use Lure") { _, _ ->
                 DataManager.useLure()
                 startHuntingWithLure(selectedCountry, selectedRegionName, true)
@@ -910,26 +910,42 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun selectRareAnimal(animals: List<Animal>): Animal {
-        val rareAnimals = animals.filter {
-            it.rarity == Rarity.RARE ||
-                    it.rarity == Rarity.LEGENDARY
+        // Filter out COMMON animals - include Uncommon, Rare, and Legendary
+        val nonCommonAnimals = animals.filter {
+            it.rarity != Rarity.COMMON
         }
 
-        if (rareAnimals.isEmpty()) {
+        // If no non-common animals available (shouldn't happen), fall back to normal selection
+        if (nonCommonAnimals.isEmpty()) {
             return selectRandomAnimal(animals)
         }
 
-        val totalWeight = rareAnimals.sumOf { it.rarity.weight }
+        // Define custom weights for lure selection
+        // These override the normal rarity weights when a lure is active
+        val lureWeights = mapOf(
+            Rarity.UNCOMMON to 50,   // 50% chance
+            Rarity.RARE to 35,        // 35% chance
+            Rarity.LEGENDARY to 15    // 15% chance
+        )
+
+        // Calculate total weight based on available animals with lure weights
+        val totalWeight = nonCommonAnimals.sumOf { animal ->
+            lureWeights[animal.rarity] ?: 0
+        }
+
+        // Select based on weighted random
         var random = Random.nextInt(totalWeight)
 
-        for (animal in rareAnimals) {
-            random -= animal.rarity.weight
+        for (animal in nonCommonAnimals) {
+            val weight = lureWeights[animal.rarity] ?: 0
+            random -= weight
             if (random < 0) {
                 return animal
             }
         }
 
-        return rareAnimals.last()
+        // Fallback (shouldn't reach here)
+        return nonCommonAnimals.last()
     }
 
     private fun updateLureDisplay() {
