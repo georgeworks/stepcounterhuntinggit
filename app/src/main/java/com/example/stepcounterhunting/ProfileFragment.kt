@@ -75,13 +75,13 @@ class ProfileFragment : Fragment() {
         Challenge(
             "duplicate_hunter",
             "Duplicate Hunter",
-            "Catch 10 duplicate animals",
+            "Catch 20 duplicate animals",
             android.R.drawable.ic_menu_rotate
         ) { fragment ->
             val collection = DataManager.getCollection()
             val uniqueAnimals = collection.distinctBy { it.id }
             val duplicates = collection.size - uniqueAnimals.size
-            duplicates >= 10
+            duplicates >= 20
         },
 
         Challenge(
@@ -97,7 +97,7 @@ class ProfileFragment : Fragment() {
         Challenge(
             "step_master",
             "Step Master",
-            "Walk 25,000 total steps",
+            "Hunt for 25,000 total steps",
             android.R.drawable.ic_menu_directions
         ) { fragment ->
             val stats = DataManager.getStats()
@@ -166,7 +166,7 @@ class ProfileFragment : Fragment() {
         Challenge(
             "marathon_walker",
             "Marathon Walker",
-            "Walk 50,000 total steps",
+            "Hunt for 50,000 total steps",
             android.R.drawable.ic_menu_compass
         ) { fragment ->
             val stats = DataManager.getStats()
