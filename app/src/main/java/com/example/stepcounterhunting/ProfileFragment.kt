@@ -55,11 +55,124 @@ class ProfileFragment : Fragment() {
     // Stamp grid views
     private var regionsGrid: GridLayout? = null
     private var countriesGrid: GridLayout? = null
+    private var challengesGrid: GridLayout? = null
 
     // Button
     private var replayTutorialButton: Button? = null
 
     private val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+
+    // Challenge definitions
+    data class Challenge(
+        val id: String,
+        val name: String,
+        val description: String,
+        val iconResource: Int,
+        val checkCompletion: (ProfileFragment) -> Boolean
+    )
+
+    private val challenges = listOf(
+        Challenge(
+            "duplicate_hunter",
+            "Duplicate Hunter",
+            "Catch 10 duplicate animals",
+            android.R.drawable.ic_menu_rotate
+        ) { fragment ->
+            val collection = DataManager.getCollection()
+            val uniqueAnimals = collection.distinctBy { it.id }
+            val duplicates = collection.size - uniqueAnimals.size
+            duplicates >= 10
+        },
+
+        Challenge(
+            "legendary_seeker",
+            "Legendary Seeker",
+            "Catch 5 legendary animals",
+            android.R.drawable.star_big_on
+        ) { fragment ->
+            val collection = DataManager.getCollection()
+            collection.count { it.rarity == Rarity.LEGENDARY } >= 5
+        },
+
+        Challenge(
+            "step_master",
+            "Step Master",
+            "Walk 25,000 total steps",
+            android.R.drawable.ic_menu_directions
+        ) { fragment ->
+            val stats = DataManager.getStats()
+            stats.totalSteps >= 25000
+        },
+
+        Challenge(
+            "region_explorer",
+            "Region Explorer",
+            "Explore 3 different regions",
+            android.R.drawable.ic_menu_mapmode
+        ) { fragment ->
+            val stats = DataManager.getStats()
+            stats.regionsExplored >= 3
+        },
+
+        Challenge(
+            "collector",
+            "Collector",
+            "Catch 25 animals total",
+            android.R.drawable.ic_menu_gallery
+        ) { fragment ->
+            val collection = DataManager.getCollection()
+            collection.size >= 25
+        },
+
+        Challenge(
+            "rare_finder",
+            "Rare Finder",
+            "Catch your first rare animal",
+            android.R.drawable.ic_menu_search
+        ) { fragment ->
+            val collection = DataManager.getCollection()
+            collection.any { it.rarity == Rarity.RARE || it.rarity == Rarity.LEGENDARY }
+        },
+
+        Challenge(
+            "completionist",
+            "Completionist",
+            "Complete any region (catch all animals)",
+            android.R.drawable.ic_menu_agenda
+        ) { fragment ->
+            val collection = DataManager.getCollection()
+            val uniqueAnimals = collection.distinctBy { it.id }
+
+            DataManager.usRegions.any { region ->
+                region.animals.all { regionAnimal ->
+                    uniqueAnimals.any { it.id == regionAnimal.id }
+                }
+            }
+        },
+
+        Challenge(
+            "lure_master",
+            "Lure Master",
+            "Accumulate 15 lures",
+            android.R.drawable.ic_menu_preferences
+        ) { fragment ->
+            val currentLures = DataManager.getLureCount()
+            val collection = DataManager.getCollection()
+            val uniqueAnimals = collection.distinctBy { it.id }
+            val totalLuresEarned = collection.size - uniqueAnimals.size
+            (currentLures + totalLuresEarned) >= 15
+        },
+
+        Challenge(
+            "marathon_walker",
+            "Marathon Walker",
+            "Walk 50,000 total steps",
+            android.R.drawable.ic_menu_compass
+        ) { fragment ->
+            val stats = DataManager.getStats()
+            stats.totalSteps >= 50000
+        }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -112,7 +225,7 @@ class ProfileFragment : Fragment() {
         // Stamp grids
         regionsGrid = view.findViewById(R.id.regions_grid)
         countriesGrid = view.findViewById(R.id.countries_grid)
-
+        challengesGrid = view.findViewById(R.id.challenges_grid)
     }
 
     private fun updateStats() {
@@ -132,6 +245,10 @@ class ProfileFragment : Fragment() {
         // Update stamp grids if they exist
         if (regionsGrid != null || countriesGrid != null) {
             updateCompletionStamps()
+        }
+        // Update challenge stamps if they exist
+        if (challengesGrid != null) {
+            updateChallengeStamps()
         }
     }
 
@@ -306,6 +423,60 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    private fun updateChallengeStamps() {
+        challengesGrid?.let { grid ->
+            grid.removeAllViews()
+
+            challenges.forEach { challenge ->
+                val stampView = createChallengeStampView(challenge)
+                grid.addView(stampView)
+            }
+        }
+    }
+
+    private fun createChallengeStampView(challenge: Challenge): View {
+        val inflater = LayoutInflater.from(context)
+        val stampView = inflater.inflate(R.layout.stamp_item, null)
+
+        val icon = stampView.findViewById<ImageView>(R.id.stamp_icon)
+        val name = stampView.findViewById<TextView>(R.id.stamp_name)
+        val progress = stampView.findViewById<TextView>(R.id.stamp_progress)
+
+        // Check if challenge is completed
+        val isComplete = challenge.checkCompletion(this)
+
+        // Set name (break long names)
+        name.text = challenge.name.replace(" ", "\n")
+
+        // Set progress text
+        progress.text = if (isComplete) "✓" else ""
+
+        // Set icon and colors based on completion
+        setStampAppearance(icon, isComplete, challenge.iconResource)
+
+        // Add click listener to show challenge description
+        stampView.setOnClickListener {
+            showChallengeDialog(challenge, isComplete)
+        }
+
+        return stampView
+    }
+
+    private fun showChallengeDialog(challenge: Challenge, isComplete: Boolean) {
+        val title = if (isComplete) "✓ ${challenge.name}" else challenge.name
+        val message = if (isComplete) {
+            challenge.description + "\n\nCompleted!"
+        } else {
+            challenge.description
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
     private fun createStampView(
         regionName: String,
         collectedAnimals: List<Animal>,
@@ -428,7 +599,3 @@ class ProfileFragment : Fragment() {
         updateStats()
     }
 }
-
-
-
-

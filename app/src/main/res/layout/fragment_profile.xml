@@ -447,70 +447,111 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
-            <!-- Region Completion Stamps -->
-            <LinearLayout
+        </LinearLayout>
+
+        <!-- Region Completion Stamps -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/stat_card_background"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:elevation="2dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Region Stamps"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <!-- US Regions Grid -->
+            <GridLayout
+                android:id="@+id/regions_grid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/stat_card_background"
-                android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="12dp"
-                android:elevation="2dp">
+                android:columnCount="3"
+                android:alignmentMode="alignBounds"
+                android:useDefaultMargins="true">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Region Stamps"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                <!-- Stamps will be added programmatically -->
 
-                <!-- US Regions Grid -->
-                <GridLayout
-                    android:id="@+id/regions_grid"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:columnCount="3"
-                    android:alignmentMode="alignBounds"
-                    android:useDefaultMargins="true">
+            </GridLayout>
+        </LinearLayout>
 
-                    <!-- Stamps will be added programmatically -->
+        <!-- Country Completion Stamps -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/stat_card_background"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:elevation="2dp">
 
-                </GridLayout>
-            </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Country Stamps"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
 
-            <!-- Country Completion Stamps -->
-            <LinearLayout
+            <!-- Countries Grid -->
+            <GridLayout
+                android:id="@+id/countries_grid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/stat_card_background"
-                android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginBottom="16dp"
-                android:elevation="2dp">
+                android:columnCount="3"
+                android:alignmentMode="alignBounds"
+                android:useDefaultMargins="true">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Country Stamps"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                <!-- Stamps will be added programmatically -->
 
-                <!-- Countries Grid -->
-                <GridLayout
-                    android:id="@+id/countries_grid"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:columnCount="3"
-                    android:alignmentMode="alignBounds"
-                    android:useDefaultMargins="true">
+            </GridLayout>
+        </LinearLayout>
 
-                    <!-- Stamps will be added programmatically -->
+        <!-- Challenge Stamps -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/stat_card_background"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="2dp">
 
-                </GridLayout>
-                </LinearLayout>
-            </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Challenge Stamps"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Complete challenges to earn stamps! Tap any stamp to see details."
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Challenges Grid -->
+            <GridLayout
+                android:id="@+id/challenges_grid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3"
+                android:alignmentMode="alignBounds"
+                android:useDefaultMargins="true">
+
+                <!-- Challenge stamps will be added programmatically -->
+
+            </GridLayout>
+        </LinearLayout>
+
     </LinearLayout>
 </ScrollView>
