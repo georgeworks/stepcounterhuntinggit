@@ -181,14 +181,15 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun setupRegionCards() {
-        val collection = DataManager.getCollection()
+        val collection = DataManager.getCollection().toSet()
 
         // Determine the initial position BEFORE setting up the adapter
         val initialPosition = determineInitialRegionPosition()
 
+        // Note: Now passing only collection, not collectedAnimals
         regionAdapter = RegionCardAdapter(
             DataManager.usRegions,
-            collection
+            collection  // Pass only the collection Set
         ) { region, position ->
             selectedRegion = region
             selectedRegionName = region.name
@@ -880,6 +881,21 @@ class HuntFragment : Fragment(), SensorEventListener {
                 .putInt("total_lifetime_steps", totalSteps + STEPS_REQUIRED)
                 .apply()
 
+            // UPDATE THE REGION CARDS TO REFLECT NEW COLLECTION
+            activity?.runOnUiThread {
+                // Update the collection data in the adapter - convert List to Set
+                val updatedCollection = DataManager.getCollection().toSet()
+                regionAdapter.updateCollection(updatedCollection)
+
+                // If you want to update only the specific region card that changed
+                val regionIndex = DataManager.usRegions.indexOfFirst { it.name == region.name }
+                if (regionIndex != -1) {
+                    regionAdapter.notifyItemChanged(regionIndex)
+                }
+
+                updateLureDisplay()
+            }
+
             val dialog = AnimalCaughtDialogWithLure(caughtAnimal, isDuplicate, isUsingLure) {
                 activity?.runOnUiThread {
                     updateLureDisplay()
@@ -890,10 +906,6 @@ class HuntFragment : Fragment(), SensorEventListener {
 
             isUsingLure = false
             prefs.edit().putBoolean("using_lure", false).apply()
-
-            activity?.runOnUiThread {
-                updateLureDisplay()
-            }
         }
     }
 
@@ -945,7 +957,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
             }
             huntStatusText.text =
-                "Continue hunting! Walk another $STEPS_REQUIRED steps for the next animal!"
+                ""
 
             try {
                 StepCounterService.startService(requireContext())

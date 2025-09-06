@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class RegionCardAdapter(
     private val regions: List<Region>,
-    private val collectedAnimals: List<Animal>,
+    private var collection: Set<Animal>,  // Use only one collection variable
     private val onRegionSelected: (Region, Int) -> Unit
 ) : RecyclerView.Adapter<RegionCardAdapter.RegionViewHolder>() {
 
@@ -40,9 +40,8 @@ class RegionCardAdapter(
         holder.regionName.text = region.name
         holder.regionDescription.text = getRegionDescription(region.name)
 
-        // Calculate caught animals in this region
-        val uniqueCaughtAnimals = collectedAnimals.distinctBy { it.id }
-        val caughtInRegion = uniqueCaughtAnimals.count { caughtAnimal ->
+        // Calculate caught animals in this region using the collection Set
+        val caughtInRegion = collection.count { caughtAnimal ->
             region.animals.any { it.id == caughtAnimal.id }
         }
         val totalInRegion = region.animals.size
@@ -108,6 +107,12 @@ class RegionCardAdapter(
         selectedPosition = position
         notifyItemChanged(previousPosition)
         notifyItemChanged(selectedPosition)
+    }
+
+    fun updateCollection(newCollection: Set<Animal>) {
+        collection = newCollection
+        // Notify that all items might have changed since collection affects all cards
+        notifyDataSetChanged()
     }
 
     fun getSelectedRegion(): Region? {
