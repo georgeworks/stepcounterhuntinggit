@@ -11,10 +11,10 @@ data class Animal(
 )
 
 enum class Rarity(val displayName: String, val weight: Int, val color: String) {
-    COMMON("Common", 40, "#808080"),
-    UNCOMMON("Uncommon", 30, "#00FF00"),
-    RARE("Rare", 20, "#0080FF"),
-    LEGENDARY("Legendary", 2, "#FFD700")
+    COMMON("Common", 55, "#808080"),
+    UNCOMMON("Uncommon", 25, "#00FF00"),
+    RARE("Rare", 15, "#0080FF"),
+    LEGENDARY("Legendary", 5, "#FFD700")
 }
 
 data class Region(
