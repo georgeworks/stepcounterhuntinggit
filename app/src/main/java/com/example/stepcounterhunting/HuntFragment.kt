@@ -1,4 +1,4 @@
-// HuntFragment.kt - WITH SIMPLE NOTIFICATION
+// HuntFragment.kt - CLEANED VERSION
 package com.example.stepcounterhunting
 
 import android.Manifest
@@ -25,14 +25,21 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import kotlin.random.Random
+import android.widget.HorizontalScrollView
+import android.widget.LinearLayout
+import androidx.cardview.widget.CardView
+import androidx.viewpager2.widget.ViewPager2
+import androidx.recyclerview.widget.RecyclerView
 
 class HuntFragment : Fragment(), SensorEventListener {
-    private lateinit var countrySpinner: Spinner
-    private lateinit var regionSpinner: Spinner
+    private lateinit var countryScrollView: HorizontalScrollView
+    private lateinit var countryContainer: LinearLayout
+    private lateinit var regionViewPager: ViewPager2
+    private lateinit var pageIndicator: LinearLayout
+    private lateinit var regionAdapter: RegionCardAdapter
     private lateinit var startHuntButton: Button
     private lateinit var stepCountText: TextView
     private lateinit var progressBar: ProgressBar
-    private lateinit var currentRegionText: TextView
     private lateinit var huntStatusText: TextView
 
     private var sensorManager: SensorManager? = null
@@ -53,16 +60,17 @@ class HuntFragment : Fragment(), SensorEventListener {
     private var lastNotificationUpdate = 0L
     private var isUsingLure = false
     private lateinit var lureCountText: TextView
-    private lateinit var regionProgressText: TextView
 
-    private var tutorialOverlay: TutorialOverlay? = null  // Make nullable
+    private var tutorialOverlay: TutorialOverlay? = null
     private var hasPendingTutorial = false
+    private var selectedCountryIndex = 0
+    private var selectedRegion: Region? = null
 
     companion object {
-        const val STEPS_REQUIRED = 100  // Set low for testing
+        const val STEPS_REQUIRED = 100
         const val CHANNEL_ID = "StepHuntingChannel"
         const val NOTIFICATION_ID = 2001
-        const val NOTIFICATION_UPDATE_INTERVAL = 10 // Update notification every 10 steps
+        const val NOTIFICATION_UPDATE_INTERVAL = 10
     }
 
     override fun onCreateView(
@@ -78,15 +86,15 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Initialize views
         lureCountText = view.findViewById(R.id.lure_count_text)
-        countrySpinner = view.findViewById(R.id.country_spinner)
-        regionSpinner = view.findViewById(R.id.region_spinner)
+        countryScrollView = view.findViewById(R.id.country_scroll_view)
+        countryContainer = view.findViewById(R.id.country_container)
+        regionViewPager = view.findViewById(R.id.region_view_pager)
+        pageIndicator = view.findViewById(R.id.page_indicator)
         startHuntButton = view.findViewById(R.id.start_hunt_button)
         stepCountText = view.findViewById(R.id.step_count_text)
         progressBar = view.findViewById(R.id.progress_bar)
-        currentRegionText = view.findViewById(R.id.current_region_text)
         huntStatusText = view.findViewById(R.id.hunt_status_text)
-        regionProgressText = view.findViewById(R.id.region_progress_text)
-        updateLureDisplay()
+        // Removed: currentRegionText and regionProgressText
 
         // Initialize sensor and preferences
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -100,13 +108,20 @@ class HuntFragment : Fragment(), SensorEventListener {
             createNotificationChannel()
         }
 
-        setupSpinners()
+        // IMPORTANT: Restore hunt state BEFORE setting up UI components
+        // This ensures isHunting and hunting region are known
         restoreHuntState()
+
+        // Then setup UI components with the correct initial state
+        setupCountrySelector()
+        setupRegionCards()
+
+        // Update displays after everything is set up
+        updateLureDisplay()
 
         startHuntButton.setOnClickListener {
             when {
                 !isHunting -> {
-                    // Not hunting, start a new hunt
                     if (!hasNotificationPermission() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         requestNotificationPermission()
                     }
@@ -114,12 +129,10 @@ class HuntFragment : Fragment(), SensorEventListener {
                 }
 
                 isHunting && (selectedCountry != huntingCountry || selectedRegionName != huntingRegionName) -> {
-                    // Hunting but selected different region, show warning
                     showRegionChangeDialog()
                 }
 
                 else -> {
-                    // Normal stop hunting
                     stopHunting()
                 }
             }
@@ -129,22 +142,170 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Initialize tutorial overlay
         initializeTutorial()
+    }
 
-        // DON'T check for tutorial here - wait for onResume
+    private fun setupCountrySelector() {
+        val countries = listOf(
+            Pair("United States", true),
+            Pair("China", false),
+            Pair("Australia", false),
+            Pair("Brazil", false),
+            Pair("Madagascar", false)
+        )
+
+        countries.forEachIndexed { index, (country, isEnabled) ->
+            val bubbleView = layoutInflater.inflate(R.layout.item_country_bubble, countryContainer, false)
+            val card = bubbleView.findViewById<CardView>(R.id.country_card)
+            val nameText = bubbleView.findViewById<TextView>(R.id.country_name)
+            val comingSoonText = bubbleView.findViewById<TextView>(R.id.coming_soon_text)
+
+            nameText.text = country
+
+            if (!isEnabled) {
+                comingSoonText.visibility = View.VISIBLE
+                card.alpha = 0.5f
+                card.isClickable = false
+            } else {
+                card.setOnClickListener {
+                    selectCountry(index)
+                }
+                // Select United States by default
+                if (index == 0) {
+                    card.cardElevation = 8f
+                    selectedCountry = "United States"
+                }
+            }
+
+            countryContainer.addView(bubbleView)
+        }
+    }
+
+    private fun setupRegionCards() {
+        val collection = DataManager.getCollection()
+
+        // Determine the initial position BEFORE setting up the adapter
+        val initialPosition = determineInitialRegionPosition()
+
+        regionAdapter = RegionCardAdapter(
+            DataManager.usRegions,
+            collection
+        ) { region, position ->
+            selectedRegion = region
+            selectedRegionName = region.name
+            selectedCountry = "United States"
+            currentRegion = region
+            checkForRegionChange()
+        }
+
+        regionViewPager.adapter = regionAdapter
+
+        // Add page change listener for dots
+        regionViewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                updatePageIndicator(position)
+                regionAdapter.setSelectedPosition(position)
+                selectedRegion = DataManager.usRegions[position]
+                selectedRegionName = selectedRegion?.name
+                selectedCountry = "United States"
+                currentRegion = selectedRegion
+                checkForRegionChange()
+            }
+        })
+
+        // Setup page indicator dots
+        setupPageIndicator(DataManager.usRegions.size)
+
+        // Set the initial position WITHOUT animation
+        regionViewPager.setCurrentItem(initialPosition, false)
+        regionAdapter.setSelectedPosition(initialPosition)
+
+        // Set the selected region based on initial position
+        if (DataManager.usRegions.isNotEmpty() && initialPosition < DataManager.usRegions.size) {
+            selectedRegion = DataManager.usRegions[initialPosition]
+            selectedRegionName = selectedRegion?.name
+            currentRegion = selectedRegion
+            updatePageIndicator(initialPosition)
+        }
+    }
+
+    private fun determineInitialRegionPosition(): Int {
+        // First priority: If currently hunting, use hunting region
+        if (isHunting) {
+            val huntingRegion = prefs.getString("current_region", null)
+            if (huntingRegion != null) {
+                val index = DataManager.usRegions.indexOfFirst { it.name == huntingRegion }
+                if (index >= 0) return index
+            }
+        }
+
+        // Second priority: Use last selected region
+        val lastRegion = prefs.getString("last_selected_region_United States", null)
+        if (lastRegion != null) {
+            val index = DataManager.usRegions.indexOfFirst { it.name == lastRegion }
+            if (index >= 0) return index
+        }
+
+        // Default to first region
+        return 0
+    }
+
+    private fun setupPageIndicator(pageCount: Int) {
+        pageIndicator.removeAllViews()
+
+        for (i in 0 until pageCount) {
+            val dot = ImageView(context)
+            dot.setImageResource(R.drawable.page_indicator_dot)
+
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(4, 0, 4, 0)
+            dot.layoutParams = params
+
+            pageIndicator.addView(dot)
+        }
+
+        // Select first dot
+        updatePageIndicator(0)
+    }
+
+    private fun updatePageIndicator(position: Int) {
+        for (i in 0 until pageIndicator.childCount) {
+            val dot = pageIndicator.getChildAt(i) as ImageView
+            if (i == position) {
+                dot.setImageResource(R.drawable.page_indicator_dot_selected)
+            } else {
+                dot.setImageResource(R.drawable.page_indicator_dot)
+            }
+        }
+    }
+
+    private fun selectCountry(index: Int) {
+        if (index != 0) {
+            Toast.makeText(context, "This country is coming soon!", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        selectedCountryIndex = index
+        selectedCountry = "United States"
+
+        // Update UI to show selected country
+        for (i in 0 until countryContainer.childCount) {
+            val bubbleView = countryContainer.getChildAt(i)
+            val card = bubbleView.findViewById<CardView>(R.id.country_card)
+            card?.cardElevation = if (i == index) 8f else 2f
+        }
     }
 
     private fun isRequestingPermissions(): Boolean {
-        // Check if we need to request permissions on first launch
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 !hasNotificationPermission() &&
-                prefs.getBoolean("first_app_launch", true)  // Check if this is truly first launch
+                prefs.getBoolean("first_app_launch", true)
     }
 
     private fun initializeTutorial() {
-        // Clean up any existing tutorial first
         tutorialOverlay?.cleanup()
-
-        // Create new tutorial overlay
         val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
         tutorialOverlay = TutorialOverlay(requireContext(), rootView)
     }
@@ -159,8 +320,7 @@ class HuntFragment : Fragment(), SensorEventListener {
 
     private fun isViewsReady(): Boolean {
         return try {
-            countrySpinner.adapter != null &&
-                    regionSpinner.adapter != null &&
+            regionViewPager.adapter != null &&
                     startHuntButton != null &&
                     view != null
         } catch (e: Exception) {
@@ -169,10 +329,8 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun startTutorial() {
-        // Prevent multiple tutorial starts
         if (hasPendingTutorial) return
 
-        // Check if tutorial overlay is properly initialized
         if (tutorialOverlay == null) {
             initializeTutorial()
         }
@@ -180,25 +338,20 @@ class HuntFragment : Fragment(), SensorEventListener {
         hasPendingTutorial = true
 
         tutorialOverlay?.startTutorial {
-            // Tutorial completed callback
             Toast.makeText(requireContext(), "Tutorial completed! Ready to hunt!", Toast.LENGTH_SHORT).show()
             hasPendingTutorial = false
-
-            // Make sure UI is in correct state after tutorial
             resetUIAfterTutorial()
         }
     }
 
     private fun resetUIAfterTutorial() {
         startHuntButton.isEnabled = true
-        countrySpinner.isEnabled = true
-        regionSpinner.isEnabled = true
-
-        setupSpinners()
+        // Re-enable UI components after tutorial
+        setupCountrySelector()
+        setupRegionCards()
         updateUI()
     }
 
-    // Override onRequestPermissionsResult to handle tutorial after permissions
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -206,10 +359,8 @@ class HuntFragment : Fragment(), SensorEventListener {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        // Mark that this is no longer first app launch
         prefs.edit().putBoolean("first_app_launch", false).apply()
 
-        // After permission dialog, check for tutorial
         view?.postDelayed({
             if (isResumed) {
                 checkAndShowTutorial()
@@ -224,7 +375,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         } else {
-            true // Permission not needed below Android 13
+            true
         }
     }
 
@@ -247,142 +398,17 @@ class HuntFragment : Fragment(), SensorEventListener {
             ).apply {
                 description = "Shows your hunting progress"
                 setShowBadge(false)
-                setSound(null, null) // No sound for updates
+                setSound(null, null)
             }
             notificationManager?.createNotificationChannel(channel)
         }
     }
 
-    private fun setupSpinners() {
-        // Setup country spinner with "Coming Soon" labels
-        val countries = listOf(
-            "United States",
-            "China (Coming Soon)",
-            "Australia (Coming Soon)",
-            "Brazil (Coming Soon)",
-            "Madagascar (Coming Soon)"
-        )
-
-        // Create custom adapter that disables non-US countries
-        val countryAdapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, countries) {
-            override fun isEnabled(position: Int): Boolean {
-                // Only United States (position 0) is enabled
-                return position == 0
-            }
-
-            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getDropDownView(position, convertView, parent)
-                val textView = view as TextView
-
-                if (position == 0) {
-                    // United States - enabled
-                    textView.setTextColor(ContextCompat.getColor(context, android.R.color.black))
-                } else {
-                    // Other countries - disabled/grayed out
-                    textView.setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
-                }
-
-                return view
-            }
-        }
-
-        countryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        countrySpinner.adapter = countryAdapter
-
-        countrySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                // Force selection to stay on United States if user somehow selects a disabled item
-                if (position != 0) {
-                    countrySpinner.setSelection(0)
-                    Toast.makeText(requireContext(), "This country is coming soon!", Toast.LENGTH_SHORT).show()
-                    return
-                }
-
-                selectedCountry = "United States" // Always United States for now
-                updateRegionSpinner("United States")
-                checkForRegionChange()
-
-                // Save the country selection as preference
-                prefs.edit().putString("last_selected_country", selectedCountry).apply()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        // Set default selection to United States
-        countrySpinner.setSelection(0)
-    }
-
-    private fun updateRegionSpinner(country: String) {
-        val regions = when (country) {
-            "United States" -> DataManager.usRegions.map { it.name }
-            "China" -> listOf(
-                "Western China",
-                "Central China",
-                "Atlantic China",
-                "Northern Territories"
-            )
-
-            "Australia" -> listOf("Northern Australia", "Central Australia", "Southern Australia")
-            "Brazil" -> listOf("North", "Northeast", "Central-West", "Southeast", "South")
-            "Madagascar" -> listOf("England", "Scotland", "Wales", "Northern Ireland")
-            else -> listOf()
-        }
-
-        val regionAdapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, regions)
-        regionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        regionSpinner.adapter = regionAdapter
-
-        regionSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                selectedRegionName = regions[position]
-                checkForRegionChange()
-                updateRegionProgress()
-
-                // Save the region selection as preference for this country
-                prefs.edit().putString("last_selected_region_$country", selectedRegionName).apply()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        // Try to restore the last selected region for this country
-        val currentHuntRegion = if (prefs.getString("current_country", null) == country) {
-            prefs.getString("current_region", null)
-        } else null
-
-        val lastSelectedRegion = prefs.getString("last_selected_region_$country", null)
-        val defaultRegion = currentHuntRegion ?: lastSelectedRegion
-
-        // Set the spinner to the preferred region if it exists
-        if (defaultRegion != null && regions.contains(defaultRegion)) {
-            val regionIndex = regions.indexOf(defaultRegion)
-            if (regionIndex >= 0) {
-                regionSpinner.setSelection(regionIndex)
-            }
-        }
-
-        updateRegionProgress()
-    }
-
     private fun checkForRegionChange() {
         if (isHunting && !hasCompletedCurrentHunt) {
-            // Check if the selected region is different from the hunting region
             if ((selectedCountry != huntingCountry || selectedRegionName != huntingRegionName)
                 && selectedCountry != null && selectedRegionName != null
             ) {
-                // User selected a different region while hunting
                 startHuntButton.text = "Change Region?"
                 startHuntButton.setBackgroundColor(
                     ContextCompat.getColor(
@@ -391,7 +417,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                     )
                 )
             } else {
-                // Same region selected, show normal stop button
                 startHuntButton.text = "Stop Hunting"
                 startHuntButton.setBackgroundColor(
                     ContextCompat.getColor(
@@ -403,118 +428,15 @@ class HuntFragment : Fragment(), SensorEventListener {
         }
     }
 
-    private fun updateRegionProgress() {
-        val selectedCountry = countrySpinner.selectedItem as? String
-        val selectedRegionName = regionSpinner.selectedItem as? String
-
-        if (selectedCountry == null || selectedRegionName == null) {
-            regionProgressText.text = "0/?"
-            return
-        }
-
-        // Get all caught animals
-        val caughtAnimals = DataManager.getCollection()
-        val uniqueCaughtAnimals = caughtAnimals.distinctBy { it.id }
-
-        when (selectedCountry) {
-            "United States" -> {
-                // Find the selected US region
-                val selectedRegion = DataManager.usRegions.find { it.name == selectedRegionName }
-                if (selectedRegion != null) {
-                    // Count how many animals from this region the player has caught
-                    val caughtInRegion = uniqueCaughtAnimals.count { caughtAnimal ->
-                        selectedRegion.animals.any { it.id == caughtAnimal.id }
-                    }
-                    val totalInRegion = selectedRegion.animals.size
-
-                    regionProgressText.text = "$caughtInRegion/$totalInRegion"
-
-                    // Optional: Change color based on progress
-                    regionProgressText.setTextColor(
-                        when {
-                            caughtInRegion == totalInRegion ->
-                                ContextCompat.getColor(
-                                    requireContext(),
-                                    android.R.color.holo_green_dark
-                                )
-
-                            caughtInRegion >= totalInRegion / 2 ->
-                                ContextCompat.getColor(
-                                    requireContext(),
-                                    android.R.color.holo_orange_dark
-                                )
-
-                            else ->
-                                ContextCompat.getColor(
-                                    requireContext(),
-                                    android.R.color.holo_blue_dark
-                                )
-                        }
-                    )
-                } else {
-                    regionProgressText.text = "0/10"
-                }
-            }
-
-            else -> {
-                // For non-US countries, we use default animals (assuming 5 per country)
-                val caughtInCountry = uniqueCaughtAnimals.count { animal ->
-                    when (selectedCountry) {
-                        "China" -> animal.region.contains("China") &&
-                                (selectedRegionName in animal.region)
-
-                        "Australia" -> animal.region.contains("Australia") &&
-                                (selectedRegionName in animal.region)
-
-                        "Brazil" -> animal.region.contains("Brazil") &&
-                                (selectedRegionName in animal.region)
-
-                        "Madagascar" -> (animal.region.contains("Madagascar") ||
-                                animal.region.contains(selectedRegionName))
-
-                        else -> false
-                    }
-                }
-
-                // Assume 5 animals per region for non-US countries
-                regionProgressText.text = "$caughtInCountry/5"
-
-                // Optional: Change color based on progress
-                regionProgressText.setTextColor(
-                    when {
-                        caughtInCountry >= 5 ->
-                            ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_green_dark
-                            )
-
-                        caughtInCountry >= 3 ->
-                            ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_orange_dark
-                            )
-
-                        else ->
-                            ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark)
-                    }
-                )
-            }
-        }
-    }
-
     private fun restoreHuntState() {
-        // Check if this is first app launch
         val isFirstAppLaunch = prefs.getBoolean("first_app_launch", true)
 
         if (isFirstAppLaunch) {
-            // Mark that we've launched the app
             prefs.edit().putBoolean("first_app_launch", false).apply()
         }
 
-        // Check for first launch complete (different from first app launch)
         val isFirstLaunch = prefs.getBoolean("first_launch_complete", true)
         if (isFirstLaunch) {
-            // First time opening app - ensure clean state
             prefs.edit()
                 .putBoolean("first_launch_complete", false)
                 .putBoolean("is_hunting", false)
@@ -538,17 +460,18 @@ class HuntFragment : Fragment(), SensorEventListener {
         stepCount = prefs.getInt("current_steps", 0)
         initialStepCount = prefs.getInt("initial_step_count", -1)
 
-        // Check if service marked hunt as completed while app was closed
         val serviceCompletedHunt = prefs.getBoolean("hunt_completed", false)
         val needsToShowCatch =
             serviceCompletedHunt && !hasCompletedCurrentHunt && stepCount >= STEPS_REQUIRED
         isUsingLure = prefs.getBoolean("using_lure", false)
 
-        if (isUsingLure && isHunting) {  // Only show lure active if actually hunting
-            huntStatusText.text = "🎯 LURE ACTIVE! Hunt in progress!"
+        if (isUsingLure && isHunting) {
+            huntStatusText.text = "🎯 LURE ACTIVE!"
             progressBar.progressTintList = android.content.res.ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light)
             )
+        } else {
+            huntStatusText.text = ""  // Clear the text when no lure
         }
 
         if (isHunting) {
@@ -556,38 +479,15 @@ class HuntFragment : Fragment(), SensorEventListener {
             val savedRegion = prefs.getString("current_region", "") ?: ""
 
             if (savedCountry.isNotEmpty() && savedRegion.isNotEmpty()) {
-                // Restore hunting region info
                 huntingCountry = savedCountry
                 huntingRegionName = savedRegion
                 selectedCountry = savedCountry
                 selectedRegionName = savedRegion
 
-                // Restore spinner selections
-                val countryAdapter = countrySpinner.adapter
-                for (i in 0 until countryAdapter.count) {
-                    if (countryAdapter.getItem(i) == savedCountry) {
-                        countrySpinner.setSelection(i)
-                        break
-                    }
-                }
-
-                // Wait for region spinner to populate
-                countrySpinner.post {
-                    val regionAdapter = regionSpinner.adapter
-                    if (regionAdapter != null) {
-                        for (i in 0 until regionAdapter.count) {
-                            if (regionAdapter.getItem(i) == savedRegion) {
-                                regionSpinner.setSelection(i)
-                                break
-                            }
-                        }
-                    }
-                }
-
-                currentRegion = when (savedCountry) {
-                    "United States" -> DataManager.usRegions.find { it.name == savedRegion }
-                    else -> Region(savedRegion, DataManager.getDefaultAnimals())
-                }
+                // The ViewPager position is already set correctly in setupRegionCards()
+                // Just update the current region
+                currentRegion = DataManager.usRegions.find { it.name == savedRegion }
+                selectedRegion = currentRegion
 
                 startHuntButton.text = "Stop Hunting"
                 startHuntButton.setBackgroundColor(
@@ -596,9 +496,8 @@ class HuntFragment : Fragment(), SensorEventListener {
                         android.R.color.holo_red_light
                     )
                 )
-                currentRegionText.text = "Hunting in: $savedRegion"
+                // Removed: currentRegionText.text = "Hunting in: $savedRegion"
 
-                // Check if we need to show the catch dialog
                 if (needsToShowCatch) {
                     huntStatusText.text = "Goal reached! Opening your catch..."
                     view?.postDelayed({
@@ -610,7 +509,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                     hasCompletedCurrentHunt = true
                     huntStatusText.text = "Goal reached! Continue hunting or stop to reset."
                 } else {
-                    huntStatusText.text = "Hunt in progress!"
+                    huntStatusText.text = ""  // No need to show "Hunt in progress"
                     stepSensor?.let {
                         sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                     }
@@ -620,11 +519,9 @@ class HuntFragment : Fragment(), SensorEventListener {
                     showNotification()
                 }
             } else {
-                // Invalid saved state, reset
                 isHunting = false
                 prefs.edit().putBoolean("is_hunting", false).apply()
 
-                // Set UI to not hunting state
                 startHuntButton.text = "Start Hunting"
                 startHuntButton.setBackgroundColor(
                     ContextCompat.getColor(
@@ -634,7 +531,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                 )
             }
         } else {
-            // Not hunting - ensure UI is in correct state
             startHuntButton.text = "Start Hunting"
             startHuntButton.setBackgroundColor(
                 ContextCompat.getColor(
@@ -642,52 +538,24 @@ class HuntFragment : Fragment(), SensorEventListener {
                     android.R.color.holo_green_dark
                 )
             )
-            currentRegionText.text = ""
+            // Removed: currentRegionText.text = ""
             huntStatusText.text = ""
 
-            // Set spinners to last selected or default
-            val lastCountry = prefs.getString("last_selected_country", null)
-            val defaultCountry = lastCountry ?: "United States"
-
-            val countryAdapter = countrySpinner.adapter
-            if (countryAdapter != null) {
-                for (i in 0 until countryAdapter.count) {
-                    if (countryAdapter.getItem(i) == defaultCountry) {
-                        countrySpinner.setSelection(i)
-
-                        countrySpinner.post {
-                            val lastRegion =
-                                prefs.getString("last_selected_region_$defaultCountry", null)
-
-                            if (lastRegion != null) {
-                                val regionAdapter = regionSpinner.adapter
-                                if (regionAdapter != null) {
-                                    for (j in 0 until regionAdapter.count) {
-                                        if (regionAdapter.getItem(j) == lastRegion) {
-                                            regionSpinner.setSelection(j)
-                                            break
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        break
-                    }
-                }
-            }
+            // ViewPager position is already set correctly in setupRegionCards()
         }
 
         updateUI()
     }
 
     private fun startHunting() {
-        val selectedCountry = countrySpinner.selectedItem as? String
-        val selectedRegionName = regionSpinner.selectedItem as? String
-
-        if (selectedCountry == null || selectedRegionName == null) {
-            Toast.makeText(context, "Please select a country and region", Toast.LENGTH_SHORT).show()
+        if (selectedRegion == null || selectedRegionName == null) {
+            Toast.makeText(context, "Please select a region", Toast.LENGTH_SHORT).show()
             return
         }
+
+        val selectedCountry = "United States"
+        val selectedRegionName = selectedRegionName ?: return
+
         // Check for lures and ask if they want to use one
         val lureCount = DataManager.getLureCount()
         if (lureCount > 0) {
@@ -695,59 +563,6 @@ class HuntFragment : Fragment(), SensorEventListener {
         } else {
             startHuntingWithLure(selectedCountry, selectedRegionName, false)
         }
-
-        currentRegion = when (selectedCountry) {
-            "United States" -> DataManager.usRegions.find { it.name == selectedRegionName }
-            else -> Region(selectedRegionName, DataManager.getDefaultAnimals())
-        }
-
-        isHunting = true
-        stepCount = 0
-        initialStepCount = -1
-        hasCompletedCurrentHunt = false
-        isShowingDialog = false
-
-        // Save the hunting region
-        huntingCountry = selectedCountry
-        huntingRegionName = selectedRegionName
-        this.selectedCountry = selectedCountry
-        this.selectedRegionName = selectedRegionName
-
-        // Save hunting state
-        prefs.edit()
-            .putBoolean("is_hunting", true)
-            .putString("current_country", selectedCountry)
-            .putString("current_region", selectedRegionName)
-            .putInt("current_steps", 0)
-            .putInt("initial_step_count", -1)
-            .putBoolean("hunt_completed", false)
-            .putBoolean("catch_processed", false)  // Reset the processed flag
-            .apply()
-
-        startHuntButton.text = "Stop Hunting"
-        startHuntButton.setBackgroundColor(
-            ContextCompat.getColor(
-                requireContext(),
-                android.R.color.holo_red_light
-            )
-        )
-        currentRegionText.text = "Hunting in: $selectedRegionName"
-        huntStatusText.text = "Hunt started! Walk $STEPS_REQUIRED steps to catch an animal!"
-
-        // Start the foreground service for background counting
-        try {
-            StepCounterService.startService(requireContext())
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // If service fails, still use local sensor
-        }
-
-        // Also register local sensor for immediate UI updates
-        stepSensor?.let {
-            sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-        }
-
-        updateUI()
     }
 
     private fun showLureDialog(selectedCountry: String, selectedRegionName: String) {
@@ -773,10 +588,7 @@ class HuntFragment : Fragment(), SensorEventListener {
         selectedRegionName: String,
         useLure: Boolean
     ) {
-        currentRegion = when (selectedCountry) {
-            "United States" -> DataManager.usRegions.find { it.name == selectedRegionName }
-            else -> Region(selectedRegionName, DataManager.getDefaultAnimals())
-        }
+        currentRegion = selectedRegion
 
         isHunting = true
         isUsingLure = useLure
@@ -785,22 +597,21 @@ class HuntFragment : Fragment(), SensorEventListener {
         hasCompletedCurrentHunt = false
         isShowingDialog = false
 
-        // Save the hunting region
         huntingCountry = selectedCountry
         huntingRegionName = selectedRegionName
         this.selectedCountry = selectedCountry
         this.selectedRegionName = selectedRegionName
 
-        // Save hunting state (add lure status)
         prefs.edit()
             .putBoolean("is_hunting", true)
             .putString("current_country", selectedCountry)
             .putString("current_region", selectedRegionName)
+            .putString("last_selected_region_United States", selectedRegionName) // Save as last selected
             .putInt("current_steps", 0)
             .putInt("initial_step_count", -1)
             .putBoolean("hunt_completed", false)
             .putBoolean("catch_processed", false)
-            .putBoolean("using_lure", useLure)  // Save lure status
+            .putBoolean("using_lure", useLure)
             .apply()
 
         startHuntButton.text = "Stop Hunting"
@@ -810,16 +621,14 @@ class HuntFragment : Fragment(), SensorEventListener {
                 android.R.color.holo_red_light
             )
         )
-        currentRegionText.text = "Hunting in: $selectedRegionName"
+        // Removed: currentRegionText.text = "Hunting in: $selectedRegionName"
 
-        // Update status text to show lure is active
         huntStatusText.text = if (useLure) {
-            "🎯 LURE ACTIVE! Walk $STEPS_REQUIRED steps for a rare+ animal!"
+            "🎯 LURE ACTIVE!"
         } else {
-            "Hunt started! Walk $STEPS_REQUIRED steps to catch an animal!"
+            ""  // Clear the text when not using lure
         }
 
-        // Change UI color if lure is active (optional)
         if (useLure) {
             progressBar.progressTintList = android.content.res.ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light)
@@ -828,7 +637,6 @@ class HuntFragment : Fragment(), SensorEventListener {
             progressBar.progressTintList = null
         }
 
-        // Start the foreground service for background counting
         try {
             StepCounterService.startService(requireContext())
         } catch (e: Exception) {
@@ -847,32 +655,19 @@ class HuntFragment : Fragment(), SensorEventListener {
             .setTitle("Change Region?")
             .setMessage("You have $stepCount steps in ${huntingRegionName}.\n\nChanging regions will lose your current progress. Are you sure you want to switch to ${selectedRegionName}?")
             .setPositiveButton("Yes, Change Region") { _, _ ->
-                // Stop current hunt and start new one
                 stopHunting()
                 startHunting()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
-                // Reset spinners to current hunting region
-                val countryAdapter = countrySpinner.adapter
-                for (i in 0 until countryAdapter.count) {
-                    if (countryAdapter.getItem(i) == huntingCountry) {
-                        countrySpinner.setSelection(i)
-                        break
-                    }
+                // Reset to current hunting region
+                val regionIndex = DataManager.usRegions.indexOfFirst { it.name == huntingRegionName }
+                if (regionIndex >= 0) {
+                    regionViewPager.setCurrentItem(regionIndex, true)
+                    regionAdapter.setSelectedPosition(regionIndex)
+                    selectedRegion = DataManager.usRegions[regionIndex]
+                    selectedRegionName = huntingRegionName
+                    currentRegion = selectedRegion
                 }
-
-                countrySpinner.post {
-                    val regionAdapter = regionSpinner.adapter
-                    if (regionAdapter != null) {
-                        for (i in 0 until regionAdapter.count) {
-                            if (regionAdapter.getItem(i) == huntingRegionName) {
-                                regionSpinner.setSelection(i)
-                                break
-                            }
-                        }
-                    }
-                }
-
                 dialog.dismiss()
             }
             .setCancelable(true)
@@ -888,7 +683,6 @@ class HuntFragment : Fragment(), SensorEventListener {
         huntingCountry = null
         huntingRegionName = null
 
-        // Clear hunting state
         prefs.edit()
             .putBoolean("is_hunting", false)
             .putInt("current_steps", 0)
@@ -906,11 +700,10 @@ class HuntFragment : Fragment(), SensorEventListener {
             )
         )
         huntStatusText.text = "Hunt stopped"
-        currentRegionText.text = ""
+        // Removed: currentRegionText.text = ""
 
         sensorManager?.unregisterListener(this)
 
-        // Stop the service
         try {
             StepCounterService.stopService(requireContext())
         } catch (e: Exception) {
@@ -921,23 +714,19 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        // Only process if hunting and haven't completed this hunt
         if (isHunting && !hasCompletedCurrentHunt && event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
             if (initialStepCount < 0) {
                 initialStepCount = event.values[0].toInt()
                 prefs.edit().putInt("initial_step_count", initialStepCount).apply()
-                // Important: Set step count to 0 on initialization
                 stepCount = 0
                 prefs.edit().putInt("current_steps", 0).apply()
                 updateUI()
-                return // Exit early on initialization
+                return
             }
 
             stepCount = event.values[0].toInt() - initialStepCount
 
-            // Protection against negative values (can happen after reinstall)
             if (stepCount < 0) {
-                // Reset the initial count to current sensor value
                 initialStepCount = event.values[0].toInt()
                 stepCount = 0
                 prefs.edit()
@@ -945,11 +734,9 @@ class HuntFragment : Fragment(), SensorEventListener {
                     .putInt("current_steps", 0)
                     .apply()
             } else {
-                // Save current steps only if valid
                 prefs.edit().putInt("current_steps", stepCount).apply()
             }
 
-            // Check if we've reached the goal and haven't already caught an animal
             if (stepCount >= STEPS_REQUIRED && !hasCompletedCurrentHunt && !isShowingDialog) {
                 catchAnimal()
             }
@@ -961,7 +748,6 @@ class HuntFragment : Fragment(), SensorEventListener {
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
     private fun updateUI() {
-        // Cap the displayed steps at the requirement if hunt is completed
         val displaySteps = if (hasCompletedCurrentHunt) {
             STEPS_REQUIRED
         } else {
@@ -971,7 +757,6 @@ class HuntFragment : Fragment(), SensorEventListener {
         stepCountText.text = "Steps: $displaySteps / $STEPS_REQUIRED"
         progressBar.progress = displaySteps
 
-        // Update status if goal reached but not yet reset
         if (hasCompletedCurrentHunt && isHunting) {
             huntStatusText.text =
                 "Goal reached! Continue hunting for another animal or stop to reset."
@@ -979,7 +764,6 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun showNotification() {
-        // Only show notification if we have permission and manager
         if (notificationManager == null || !hasNotificationPermission()) {
             return
         }
@@ -1003,17 +787,16 @@ class HuntFragment : Fragment(), SensorEventListener {
                 .setContentText("Progress: $currentSteps / $STEPS_REQUIRED steps")
                 .setSmallIcon(android.R.drawable.ic_menu_mylocation)
                 .setContentIntent(pendingIntent)
-                .setOngoing(true) // Makes it persistent
-                .setSilent(true) // No sound
+                .setOngoing(true)
+                .setSilent(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setProgress(STEPS_REQUIRED, currentSteps, false)
                 .setSubText("$stepsRemaining steps to go • ${progress}% complete")
-                .setOnlyAlertOnce(true) // Don't re-alert on updates
+                .setOnlyAlertOnce(true)
                 .build()
 
             notificationManager?.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
-            // Silently handle any notification errors
             e.printStackTrace()
         }
     }
@@ -1037,7 +820,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 .setContentText("You've walked $STEPS_REQUIRED steps! Tap to see what you caught!")
                 .setSmallIcon(android.R.drawable.ic_menu_mylocation)
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true) // Dismiss when tapped
+                .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build()
 
@@ -1083,14 +866,12 @@ class HuntFragment : Fragment(), SensorEventListener {
         }
 
         currentRegion?.let { region ->
-            // Get the caught animal based on lure status
             val caughtAnimal = if (isUsingLure) {
                 selectRareAnimal(region.animals)
             } else {
                 selectRandomAnimal(region.animals)
             }
 
-            // Check if it's a duplicate and add to collection
             val isDuplicate = DataManager.addToCollection(caughtAnimal)
             DataManager.addExploredRegion(region.name)
 
@@ -1099,9 +880,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                 .putInt("total_lifetime_steps", totalSteps + STEPS_REQUIRED)
                 .apply()
 
-            // Show catch dialog with duplicate indicator
             val dialog = AnimalCaughtDialogWithLure(caughtAnimal, isDuplicate, isUsingLure) {
-                // Update lure display BEFORE continuing hunt
                 activity?.runOnUiThread {
                     updateLureDisplay()
                 }
@@ -1109,11 +888,9 @@ class HuntFragment : Fragment(), SensorEventListener {
             }
             dialog.show(childFragmentManager, "animal_caught")
 
-            // Reset lure status
             isUsingLure = false
             prefs.edit().putBoolean("using_lure", false).apply()
 
-            // Force immediate UI update after dialog shows
             activity?.runOnUiThread {
                 updateLureDisplay()
             }
@@ -1121,18 +898,15 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun selectRareAnimal(animals: List<Animal>): Animal {
-        // Filter to only Rare, Epic, and Legendary
         val rareAnimals = animals.filter {
             it.rarity == Rarity.RARE ||
                     it.rarity == Rarity.LEGENDARY
         }
 
-        // If no rare animals in this region (shouldn't happen), fall back to normal selection
         if (rareAnimals.isEmpty()) {
             return selectRandomAnimal(animals)
         }
 
-        // Select from rare animals with weighted probability
         val totalWeight = rareAnimals.sumOf { it.rarity.weight }
         var random = Random.nextInt(totalWeight)
 
@@ -1146,20 +920,14 @@ class HuntFragment : Fragment(), SensorEventListener {
         return rareAnimals.last()
     }
 
-    // Add function to update lure display:
     private fun updateLureDisplay() {
         val lureCount = DataManager.getLureCount()
         lureCountText.text = "Lures: $lureCount"
-
-        // Always show the lure counter (remove the visibility condition)
         lureCountText.visibility = View.VISIBLE
-
-        // Force layout update
         lureCountText.parent?.requestLayout()
     }
 
     private fun continueHunting() {
-        // Reset for next hunt in same region
         stepCount = 0
         initialStepCount = -1
         hasCompletedCurrentHunt = false
@@ -1169,10 +937,9 @@ class HuntFragment : Fragment(), SensorEventListener {
             .putInt("current_steps", 0)
             .putInt("initial_step_count", -1)
             .putBoolean("hunt_completed", false)
-            .putBoolean("catch_processed", false)  // Reset the processed flag
+            .putBoolean("catch_processed", false)
             .apply()
 
-        // Re-register sensor listener
         if (isHunting) {
             stepSensor?.let {
                 sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
@@ -1180,7 +947,6 @@ class HuntFragment : Fragment(), SensorEventListener {
             huntStatusText.text =
                 "Continue hunting! Walk another $STEPS_REQUIRED steps for the next animal!"
 
-            // Restart the service for the next hunt
             try {
                 StepCounterService.startService(requireContext())
             } catch (e: Exception) {
@@ -1188,9 +954,7 @@ class HuntFragment : Fragment(), SensorEventListener {
             }
         }
 
-        // Update lure display after continuing
         updateLureDisplay()
-        updateRegionProgress()
         updateUI()
     }
 
@@ -1211,7 +975,6 @@ class HuntFragment : Fragment(), SensorEventListener {
     override fun onPause() {
         super.onPause()
 
-        // Save that we're pausing during tutorial if it's active
         if (tutorialOverlay?.isActive() == true) {
             // Tutorial will handle saving its state
         }
@@ -1220,78 +983,64 @@ class HuntFragment : Fragment(), SensorEventListener {
             sensorManager?.unregisterListener(this)
         }
     }
+
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up tutorial overlay to prevent memory leaks
         tutorialOverlay?.cleanup()
         tutorialOverlay = null
     }
 
-
     override fun onResume() {
         super.onResume()
 
-        // Always update lure display when fragment resumes
         updateLureDisplay()
-        updateRegionProgress()
 
-        // Check for tutorial FIRST before handling hunt state
         view?.postDelayed({
             checkForTutorialOnResume()
         }, 300L)
 
         if (isHunting) {
-            // Always check for latest step count from service
             val latestSteps = prefs.getInt("current_steps", 0)
             val huntCompleted = prefs.getBoolean("hunt_completed", false)
 
-            // Update our local step count
             stepCount = latestSteps
 
-            // Check if hunt was completed while we were away
             if (huntCompleted && !hasCompletedCurrentHunt && !isShowingDialog && stepCount >= STEPS_REQUIRED) {
-                // Service completed the hunt while app was closed
                 updateUI()
-                // Trigger the catch dialog
                 if (currentRegion != null) {
                     catchAnimal()
                 }
             } else if (!hasCompletedCurrentHunt) {
-                // Resume normal sensor listening if hunt not complete
                 stepSensor?.let {
                     sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                 }
                 updateUI()
             }
         }
-        isShowingDialog = false  // Reset dialog flag when resuming
+        isShowingDialog = false
     }
 
     private fun checkForTutorialOnResume() {
-        // Don't start multiple tutorials
         if (hasPendingTutorial) return
 
         val tutorialCompleted = prefs.getBoolean("tutorial_completed", false)
         val tutorialInProgress = prefs.getBoolean("tutorial_in_progress", false)
 
-        // Show tutorial if not completed, or if it was in progress (interrupted)
         if (!tutorialCompleted && !isHunting && isResumed && isViewsReady()) {
             if (tutorialInProgress) {
-                // Tutorial was interrupted, ask user what to do
                 showTutorialResumeDialog()
             } else {
-                // Start fresh tutorial
                 startTutorial()
             }
         }
     }
+
     private fun showTutorialResumeDialog() {
         AlertDialog.Builder(requireContext())
             .setTitle("Continue Tutorial?")
             .setMessage("You were in the middle of the tutorial. Would you like to continue where you left off or restart?")
             .setPositiveButton("Continue") { _, _ ->
-                startTutorial()  // Will resume from saved step
+                startTutorial()
             }
             .setNegativeButton("Restart") { _, _ ->
                 prefs.edit()

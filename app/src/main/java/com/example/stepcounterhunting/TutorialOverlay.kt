@@ -36,16 +36,16 @@ class TutorialOverlay(private val context: Context, private val rootView: ViewGr
 
     private val tutorialSteps = listOf(
         TutorialStep(
-            targetViewId = R.id.country_spinner,
+            targetViewId = R.id.country_scroll_view,  // Changed from country_spinner
             title = "Select Your Country",
-            description = "Start by choosing the country you want to hunt in. Different countries have unique animals to discover!",
+            description = "Swipe horizontally to see different countries. Currently, only United States is available, with more countries coming soon!",
             position = Position.BELOW,
             delay = 500L
         ),
         TutorialStep(
-            targetViewId = R.id.region_spinner,
+            targetViewId = R.id.region_view_pager,  // Changed from region_spinner
             title = "Choose a Region",
-            description = "Each country has different regions with their own wildlife. Select a specific region to explore.",
+            description = "Swipe left or right between region cards to explore different areas. Tap a card to select it for hunting.",
             position = Position.BELOW,
             delay = 300L
         ),
@@ -59,14 +59,7 @@ class TutorialOverlay(private val context: Context, private val rootView: ViewGr
         TutorialStep(
             targetViewId = R.id.lure_count_text,
             title = "Lures Boost Rare Finds",
-            description = "When you catch duplicate animals, you'll earn lures. Use them to increase your chances of finding rare animals!",
-            position = Position.ABOVE,
-            delay = 200L
-        ),
-        TutorialStep(
-            targetViewId = R.id.region_progress_text,
-            title = "Track Your Progress",
-            description = "This shows how many unique animals you've caught in the selected region. Try to catch them all!",
+            description = "When you catch duplicate animals, you'll earn lures. Use them to increase your chances of finding rare or legendary animals!",
             position = Position.ABOVE,
             delay = 200L
         )
