@@ -467,14 +467,16 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="12dp" />
 
-            <!-- US Regions Grid -->
+            <!-- US Regions Grid with fixed alignment -->
             <GridLayout
                 android:id="@+id/regions_grid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:columnCount="3"
+                android:rowCount="9"
                 android:alignmentMode="alignBounds"
-                android:useDefaultMargins="true">
+                android:orientation="horizontal"
+                android:useDefaultMargins="false">
 
                 <!-- Stamps will be added programmatically -->
 
@@ -499,16 +501,18 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="12dp" />
 
-            <!-- Countries Grid -->
+            <!-- Countries Grid with fixed alignment -->
             <GridLayout
                 android:id="@+id/countries_grid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:columnCount="3"
                 android:alignmentMode="alignBounds"
-                android:useDefaultMargins="true">
+                android:orientation="horizontal"
+                android:useDefaultMargins="false">
 
                 <!-- Stamps will be added programmatically -->
+                <!-- Important: Use same layout params as regions_grid -->
 
             </GridLayout>
         </LinearLayout>
@@ -539,16 +543,18 @@
                 android:textColor="@android:color/darker_gray"
                 android:layout_marginBottom="12dp" />
 
-            <!-- Challenges Grid -->
+            <!-- Challenges Grid with fixed alignment -->
             <GridLayout
                 android:id="@+id/challenges_grid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:columnCount="3"
                 android:alignmentMode="alignBounds"
-                android:useDefaultMargins="true">
+                android:orientation="horizontal"
+                android:useDefaultMargins="false">
 
                 <!-- Challenge stamps will be added programmatically -->
+                <!-- Important: Use same layout params as other grids -->
 
             </GridLayout>
         </LinearLayout>

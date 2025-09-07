@@ -393,33 +393,56 @@ class ProfileFragment : Fragment() {
         regionsGrid?.let { grid ->
             grid.removeAllViews()
 
-            DataManager.usRegions.forEach { region ->
+            DataManager.usRegions.forEachIndexed { index, region ->
                 val stampView = createStampView(region.name, uniqueAnimals, region.animals)
+                // ADD PROPER LAYOUT PARAMS HERE
+                val params = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(index % 3, 1f) // 3 columns with weight
+                    rowSpec = GridLayout.spec(index / 3)
+                    setMargins(8, 8, 8, 8)
+                }
+                stampView.layoutParams = params
                 grid.addView(stampView)
             }
         }
 
-        // Update country stamps - only show United States for now
+        // Update country stamps
         countriesGrid?.let { grid ->
             grid.removeAllViews()
 
-            // Only United States is available at launch
             val countries = listOf(
                 CountryData("United States", DataManager.usRegions.flatMap { it.animals })
             )
 
-            countries.forEach { country ->
+            countries.forEachIndexed { index, country ->
                 val stampView = createCountryStampView(country.name, uniqueAnimals, country.animals)
+                // ADD PROPER LAYOUT PARAMS HERE
+                val params = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(index % 3, 1f)
+                    rowSpec = GridLayout.spec(index / 3)
+                    setMargins(8, 8, 8, 8)
+                }
+                stampView.layoutParams = params
                 grid.addView(stampView)
             }
 
-            // Add "More countries coming soon" text
+            // Add "More countries coming soon" text with proper params
             val comingSoonText = TextView(context).apply {
                 text = "More countries coming soon!"
                 textSize = 12f
                 setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
                 setPadding(16, 8, 16, 8)
             }
+            val textParams = GridLayout.LayoutParams().apply {
+                columnSpec = GridLayout.spec(0, 3, 1f) // Span 3 columns
+                rowSpec = GridLayout.spec(1)
+                setMargins(8, 8, 8, 8)
+            }
+            comingSoonText.layoutParams = textParams
             grid.addView(comingSoonText)
         }
     }
@@ -428,8 +451,17 @@ class ProfileFragment : Fragment() {
         challengesGrid?.let { grid ->
             grid.removeAllViews()
 
-            challenges.forEach { challenge ->
+            challenges.forEachIndexed { index, challenge ->
                 val stampView = createChallengeStampView(challenge)
+                // ADD PROPER LAYOUT PARAMS HERE
+                val params = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(index % 3, 1f) // 3 columns with weight
+                    rowSpec = GridLayout.spec(index / 3)
+                    setMargins(8, 8, 8, 8)
+                }
+                stampView.layoutParams = params
                 grid.addView(stampView)
             }
         }
