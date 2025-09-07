@@ -40,7 +40,7 @@ class TutorialOverlay(private val context: Context, private val rootView: ViewGr
             title = "Select Your Country",
             description = "Swipe horizontally to see different countries. Currently, only United States is available, with more countries coming soon!",
             position = Position.BELOW,
-            delay = 500L
+            delay = 100L
         ),
         TutorialStep(
             targetViewId = R.id.region_view_pager,  // Changed from region_spinner
@@ -92,7 +92,7 @@ class TutorialOverlay(private val context: Context, private val rootView: ViewGr
         // Add initial delay to let UI settle
         rootView.postDelayed({
             showStep(currentStep)
-        }, 800L)
+        }, 0L)
     }
 
     fun cleanup() {

@@ -323,10 +323,25 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun checkAndShowTutorial() {
+        // Don't show tutorial without permission
+        if (!hasActivityRecognitionPermission()) {
+            return
+        }
+
         val tutorialCompleted = prefs.getBoolean("tutorial_completed", false)
 
         if (!tutorialCompleted && !isHunting && isViewsReady()) {
             startTutorial()
+        }
+    }
+    private fun hasActivityRecognitionPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACTIVITY_RECOGNITION
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Permission not needed before Android Q
         }
     }
 
@@ -373,11 +388,21 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         prefs.edit().putBoolean("first_app_launch", false).apply()
 
-        view?.postDelayed({
-            if (isResumed) {
-                checkAndShowTutorial()
+        // Check if permission was actually granted
+        when (requestCode) {
+            1001 -> { // ACTIVITY_RECOGNITION permission
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Skip all checks and start tutorial directly
+                    val tutorialCompleted = prefs.getBoolean("tutorial_completed", false)
+                    if (!tutorialCompleted && !isHunting && !hasPendingTutorial) {
+                        startTutorial()
+                    }
+                }
             }
-        }, 1000L)
+            1002 -> { // POST_NOTIFICATIONS permission
+                // Handle notification permission separately
+            }
+        }
     }
 
     private fun hasNotificationPermission(): Boolean {
@@ -1246,9 +1271,7 @@ class HuntFragment : Fragment(), SensorEventListener {
         updateLureDisplay()
         updateStreakDisplay()
 
-        view?.postDelayed({
-            checkForTutorialOnResume()
-        }, 300L)
+        checkForTutorialOnResume()
 
         if (isHunting) {
             val latestSteps = prefs.getInt("current_steps", 0)
@@ -1273,6 +1296,11 @@ class HuntFragment : Fragment(), SensorEventListener {
 
     private fun checkForTutorialOnResume() {
         if (hasPendingTutorial) return
+
+        // Check if we have the required permission first
+        if (!hasActivityRecognitionPermission()) {
+            return // Don't show tutorial without permission
+        }
 
         val tutorialCompleted = prefs.getBoolean("tutorial_completed", false)
         val tutorialInProgress = prefs.getBoolean("tutorial_in_progress", false)
