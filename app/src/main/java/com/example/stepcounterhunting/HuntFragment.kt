@@ -672,33 +672,6 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun restoreHuntState() {
-        val isFirstAppLaunch = prefs.getBoolean("first_app_launch", true)
-
-        if (isFirstAppLaunch) {
-            prefs.edit().putBoolean("first_app_launch", false).apply()
-        }
-
-        val isFirstLaunch = prefs.getBoolean("first_launch_complete", true)
-        if (isFirstLaunch) {
-            prefs.edit()
-                .putBoolean("first_launch_complete", false)
-                .putBoolean("is_hunting", false)
-                .putInt("current_steps", 0)
-                .putInt("initial_step_count", -1)
-                .putBoolean("hunt_completed", false)
-                .remove("current_country")
-                .remove("current_region")
-                .apply()
-
-            val dataPrefs =
-                requireContext().getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
-            dataPrefs.edit()
-                .putInt("lure_count", 0)
-                .putString("collection", "")
-                .putString("explored_regions", "")
-                .apply()
-        }
-
         isHunting = prefs.getBoolean("is_hunting", false)
         stepCount = prefs.getInt("current_steps", 0)
         initialStepCount = prefs.getInt("initial_step_count", -1)

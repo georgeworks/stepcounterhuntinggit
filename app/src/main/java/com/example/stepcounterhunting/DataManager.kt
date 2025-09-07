@@ -13,15 +13,16 @@ object DataManager {
         prefs = context.getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
         stepPrefs = context.getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
 
-        // Check if this is first app launch
-        val isFirstLaunch = prefs.getBoolean("data_manager_initialized", false)
-        if (!isFirstLaunch) {
+        val isInitialized = prefs.getBoolean("app_initialized", false)
+
+        if (!isInitialized) {
             // First time initialization - clear everything
             prefs.edit().clear().apply()
             stepPrefs.edit().clear().apply()
 
             // Mark as initialized
-            prefs.edit().putBoolean("data_manager_initialized", true).apply()
+            prefs.edit().putBoolean("app_initialized", true).apply()
+            stepPrefs.edit().putBoolean("first_launch_complete", false).apply()
 
             // Initialize with clean state
             collection.clear()
