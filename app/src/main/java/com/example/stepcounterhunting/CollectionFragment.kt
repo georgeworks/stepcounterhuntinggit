@@ -37,11 +37,11 @@ class CollectionFragment : Fragment() {
         setupFilterSpinner()
 
         // Use a GridLayoutManager with span size lookup for headers
-        val gridLayoutManager = GridLayoutManager(context, 2)
+        val gridLayoutManager = GridLayoutManager(context, 3)
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {
                 // Headers take full width (2 columns), animals take 1 column
-                return if (adapter.isHeader(position)) 2 else 1
+                return if (adapter.isHeader(position)) 3 else 1
             }
         }
         recyclerView.layoutManager = gridLayoutManager
