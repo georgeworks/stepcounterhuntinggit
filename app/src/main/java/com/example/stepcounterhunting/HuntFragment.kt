@@ -60,6 +60,12 @@ class HuntFragment : Fragment(), SensorEventListener {
     private var lastNotificationUpdate = 0L
     private var isUsingLure = false
     private lateinit var lureCountText: TextView
+    private lateinit var streakContainer: LinearLayout
+    private lateinit var streakBubblesContainer: LinearLayout
+    private lateinit var totalStreakText: TextView
+    private lateinit var streakLabel: TextView
+    private var currentStreakDay = 0
+    private var lastHuntDate: String = ""
 
     private var tutorialOverlay: TutorialOverlay? = null
     private var hasPendingTutorial = false
@@ -94,6 +100,10 @@ class HuntFragment : Fragment(), SensorEventListener {
         stepCountText = view.findViewById(R.id.step_count_text)
         progressBar = view.findViewById(R.id.progress_bar)
         huntStatusText = view.findViewById(R.id.hunt_status_text)
+        streakContainer = view.findViewById(R.id.streak_container)
+        streakBubblesContainer = view.findViewById(R.id.streak_bubbles_container)
+        totalStreakText = view.findViewById(R.id.total_streak_text)
+        streakLabel = view.findViewById(R.id.streak_label)
         // Removed: currentRegionText and regionProgressText
 
         // Initialize sensor and preferences
@@ -118,6 +128,7 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Update displays after everything is set up
         updateLureDisplay()
+        updateStreakDisplay()
 
         startHuntButton.setOnClickListener {
             when {
@@ -427,6 +438,237 @@ class HuntFragment : Fragment(), SensorEventListener {
                 )
             }
         }
+    }
+    private fun recordDailyHunt() {
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+
+        val streakPrefs = requireContext().getSharedPreferences("StreakData", Context.MODE_PRIVATE)
+        val lastCompletedDate = streakPrefs.getString("last_hunt_date", "") ?: ""
+        val currentCycleStart = streakPrefs.getString("cycle_start_date", today) ?: today
+        val streakDays = streakPrefs.getStringSet("streak_days", mutableSetOf()) ?: mutableSetOf()
+
+        // Check if streak is still consecutive
+        val yesterday = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000))
+
+        // Get total consecutive days
+        var totalConsecutiveDays = streakPrefs.getInt("total_consecutive_days", 0)
+
+        // Check if this is a new day
+        if (lastCompletedDate != today) {
+            // Check if we're continuing a streak or starting fresh
+            if (lastCompletedDate == yesterday) {
+                // Continuing streak
+                totalConsecutiveDays++
+            } else if (lastCompletedDate.isEmpty() || calculateDaysBetween(lastCompletedDate, today) > 1) {
+                // Broken streak or first hunt - reset to 1
+                totalConsecutiveDays = 1
+            } else {
+                // Same day, don't increment
+            }
+
+            val mutableStreakDays = streakDays.toMutableSet()
+
+            // Check if we need to start a new reward cycle (after 7 days)
+            val daysSinceCycleStart = calculateDaysBetween(currentCycleStart ?: today, today)
+
+            if (daysSinceCycleStart >= 7) {
+                // Start new reward cycle (but keep total consecutive days)
+                mutableStreakDays.clear()
+                streakPrefs.edit()
+                    .putString("cycle_start_date", today)
+                    .apply()
+            }
+
+            // Add today to streak days for reward tracking
+            mutableStreakDays.add(today)
+
+            // Check for lure rewards
+            val streakCount = mutableStreakDays.size
+            var luresAwarded = 0
+            var message = ""
+
+            when (streakCount) {
+                2 -> {
+                    luresAwarded = 1
+                    message = "🎯 2-Day Streak! +1 Lure earned!"
+                }
+                4 -> {
+                    luresAwarded = 1
+                    message = "🎯 4-Day Streak! +1 Lure earned!"
+                }
+                7 -> {
+                    luresAwarded = 2
+                    message = "🔥 WEEKLY STREAK COMPLETE! +2 Lures earned!"
+                }
+            }
+
+            // Add bonus message for milestone streaks
+            when (totalConsecutiveDays) {
+                14 -> message = "$message\n🌟 14-DAY STREAK MILESTONE!"
+                30 -> message = "$message\n🏆 30-DAY STREAK ACHIEVEMENT!"
+                50 -> message = "$message\n💎 50-DAY STREAK LEGEND!"
+                100 -> message = "$message\n👑 100-DAY STREAK MASTER!"
+            }
+
+            if (luresAwarded > 0) {
+                // Award lures
+                repeat(luresAwarded) {
+                    DataManager.addLure()
+                }
+
+                // Show celebration dialog
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Streak Reward!")
+                    .setMessage(message)
+                    .setPositiveButton("Awesome!") { dialog, _ ->
+                        dialog.dismiss()
+                        updateLureDisplay()
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+
+            // Save updated streak data
+            streakPrefs.edit()
+                .putString("last_hunt_date", today)
+                .putStringSet("streak_days", mutableStreakDays)
+                .putInt("total_consecutive_days", totalConsecutiveDays)
+                .apply()
+
+            // Update UI
+            updateStreakDisplay()
+        }
+    }
+
+    private fun updateStreakDisplay() {
+        val streakPrefs = requireContext().getSharedPreferences("StreakData", Context.MODE_PRIVATE)
+        val streakDays = streakPrefs.getStringSet("streak_days", setOf()) ?: setOf()
+        val totalConsecutiveDays = streakPrefs.getInt("total_consecutive_days", 0)
+        val lastHuntDate = streakPrefs.getString("last_hunt_date", "")
+
+        // Check if streak is still active (was yesterday or today)
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+        val yesterday = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000))
+
+        val isStreakActive = lastHuntDate == today || lastHuntDate == yesterday
+
+        // Update total streak display
+        totalStreakText.text = when {
+            totalConsecutiveDays == 0 || !isStreakActive -> "No active streak"
+            totalConsecutiveDays == 1 -> "🔥 1 day streak"
+            totalConsecutiveDays < 7 -> "🔥 $totalConsecutiveDays day streak"
+            totalConsecutiveDays < 14 -> "🔥 $totalConsecutiveDays day streak!"
+            totalConsecutiveDays < 30 -> "⭐ $totalConsecutiveDays day streak!"
+            totalConsecutiveDays < 50 -> "🌟 $totalConsecutiveDays day streak!"
+            totalConsecutiveDays < 100 -> "💎 $totalConsecutiveDays day streak!"
+            else -> "👑 $totalConsecutiveDays day streak!"
+        }
+
+        // Color code based on streak length
+        totalStreakText.setTextColor(when {
+            !isStreakActive -> ContextCompat.getColor(requireContext(), android.R.color.darker_gray)
+            totalConsecutiveDays < 7 -> ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark)
+            totalConsecutiveDays < 30 -> ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+            totalConsecutiveDays < 100 -> ContextCompat.getColor(requireContext(), android.R.color.holo_purple)
+            else -> ContextCompat.getColor(requireContext(), android.R.color.holo_red_light)
+        })
+
+        // Clear existing bubbles
+        streakBubblesContainer.removeAllViews()
+
+        // Create 7 bubbles for the 7-day reward cycle
+        for (day in 1..7) {
+            val bubble = createStreakBubble(day, streakDays.size >= day)
+            streakBubblesContainer.addView(bubble)
+
+            if (day < 7) {
+                val space = View(context)
+                space.layoutParams = LinearLayout.LayoutParams(
+                    8.dpToPx(),
+                    1
+                )
+                streakBubblesContainer.addView(space)
+            }
+        }
+
+        // Update streak label for reward cycle
+        streakLabel.text = when (streakDays.size) {
+            0 -> "Start earning rewards!"
+            1 -> "Day 1 of 7 (Next reward: Day 2)"
+            2 -> "Day 2 of 7 ✓"
+            3 -> "Day 3 of 7 (Next reward: Day 4)"
+            4 -> "Day 4 of 7 ✓"
+            5 -> "Day 5 of 7"
+            6 -> "Day 6 of 7 (Tomorrow: 2 lures!)"
+            7 -> "Week complete! 🎉"
+            else -> "Day ${streakDays.size} of 7"
+        }
+    }
+
+    private fun createStreakBubble(dayNumber: Int, isCompleted: Boolean): View {
+        val bubble = layoutInflater.inflate(R.layout.streak_bubble, null)
+        val circleView = bubble.findViewById<View>(R.id.bubble_circle)
+        val dayText = bubble.findViewById<TextView>(R.id.bubble_day_text)
+        val rewardIcon = bubble.findViewById<ImageView>(R.id.bubble_reward_icon)
+
+        dayText.text = dayNumber.toString()
+
+        // Set background based on completion status
+        if (isCompleted) {
+            circleView.setBackgroundResource(R.drawable.streak_bubble_completed)
+            dayText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+        } else {
+            circleView.setBackgroundResource(R.drawable.streak_bubble_empty)
+            dayText.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+        }
+
+        // Show reward icon for reward days
+        when (dayNumber) {
+            2, 4 -> {
+                rewardIcon.visibility = View.VISIBLE
+                rewardIcon.setImageResource(R.drawable.ic_lure_small)
+                // Tint the icon if needed
+                rewardIcon.setColorFilter(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark),
+                    android.graphics.PorterDuff.Mode.SRC_IN
+                )
+            }
+            7 -> {
+                rewardIcon.visibility = View.VISIBLE
+                rewardIcon.setImageResource(R.drawable.ic_lure_double)
+                // Tint the icon gold for double reward
+                rewardIcon.setColorFilter(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light),
+                    android.graphics.PorterDuff.Mode.SRC_IN
+                )
+            }
+            else -> {
+                rewardIcon.visibility = View.GONE
+            }
+        }
+
+        return bubble
+    }
+
+    private fun calculateDaysBetween(startDate: String, endDate: String): Int {
+        return try {
+            val format = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val start = format.parse(startDate)
+            val end = format.parse(endDate)
+            val diff = end.time - start.time
+            (diff / (1000 * 60 * 60 * 24)).toInt()
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    // Extension function to convert dp to pixels
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
     }
 
     private fun restoreHuntState() {
@@ -876,6 +1118,8 @@ class HuntFragment : Fragment(), SensorEventListener {
             val isDuplicate = DataManager.addToCollection(caughtAnimal)
             DataManager.addExploredRegion(region.name)
 
+            recordDailyHunt()
+
             val totalSteps = prefs.getInt("total_lifetime_steps", 0)
             prefs.edit()
                 .putInt("total_lifetime_steps", totalSteps + STEPS_REQUIRED)
@@ -1027,6 +1271,7 @@ class HuntFragment : Fragment(), SensorEventListener {
         super.onResume()
 
         updateLureDisplay()
+        updateStreakDisplay()
 
         view?.postDelayed({
             checkForTutorialOnResume()

@@ -92,6 +92,10 @@ object DataManager {
             setLureCount(currentLures - 1)
         }
     }
+    fun addLure(count: Int = 1) {
+        val currentLures = getLureCount()
+        setLureCount(currentLures + count)
+    }
 
     fun getCollection(): List<Animal> = collection.toList()
 

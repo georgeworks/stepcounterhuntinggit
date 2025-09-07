@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="48dp"
+    android:layout_height="56dp"
+    android:gravity="center">
+
+    <View
+        android:id="@+id/bubble_circle"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_centerHorizontal="true"
+        android:background="@drawable/streak_bubble_empty" />
+
+    <TextView
+        android:id="@+id/bubble_day_text"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:text="1"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/darker_gray" />
+
+    <ImageView
+        android:id="@+id/bubble_reward_icon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_below="@+id/bubble_circle"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="2dp"
+        android:src="@drawable/ic_lure_small"
+        android:visibility="gone" />
+
+</RelativeLayout>

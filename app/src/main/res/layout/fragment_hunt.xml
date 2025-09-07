@@ -1,132 +1,188 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F5F5">
+    android:background="#F5F5F5"
+    android:fillViewport="true">
 
-    <!-- Title -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select Location"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginLeft="16dp"
-        android:layout_marginTop="35dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Country Selector (Horizontal Scroll) -->
-    <HorizontalScrollView
-        android:id="@+id/country_scroll_view"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:layout_marginBottom="20dp">
+        android:orientation="vertical"
+        android:paddingBottom="16dp">
+
+        <!-- Horizontal container for both text views -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="4dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp">
+
+            <TextView
+                android:id="@+id/total_streak_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No active streak"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_orange_dark"
+                android:layout_marginRight="40dp" />
+
+            <TextView
+                android:id="@+id/streak_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start your streak!"
+                android:textSize="14sp"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/country_container"
-            android:layout_width="wrap_content"
+            android:id="@+id/streak_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="12dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:id="@+id/streak_bubbles_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Country Selector (Horizontal Scroll) -->
+        <HorizontalScrollView
+            android:id="@+id/country_scroll_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:id="@+id/country_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp">
+
+                <!-- Countries will be added programmatically -->
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Region Cards (ViewPager2 for swipe) -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/region_view_pager"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Page Indicator Dots -->
+        <LinearLayout
+            android:id="@+id/page_indicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="10dp">
+            <!-- Dots will be added programmatically -->
+        </LinearLayout>
+
+        <!-- Horizontal container for Lure Count and Hunt Status -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingLeft="16dp"
-            android:paddingRight="16dp">
+            android:paddingRight="16dp"
+            android:layout_marginBottom="16dp">
 
-            <!-- Countries will be added programmatically -->
+            <!-- Lure Count -->
+            <TextView
+                android:id="@+id/lure_count_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lures: 0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_orange_dark"
+                android:drawableLeft="@drawable/ic_lure"
+                android:drawablePadding="8dp" />
+
+            <!-- Hunt Status -->
+            <TextView
+                android:id="@+id/hunt_status_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="16sp"
+                android:gravity="end" />
 
         </LinearLayout>
-    </HorizontalScrollView>
 
-    <!-- Region Cards (ViewPager2 for swipe) -->
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/region_view_pager"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_marginBottom="16dp" />
+        <!-- Lure Active Indicator -->
+        <TextView
+            android:id="@+id/lure_active_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎯 LURE ACTIVE"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:background="@android:color/holo_orange_dark"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone" />
 
-    <!-- Page Indicator Dots -->
-    <LinearLayout
-        android:id="@+id/page_indicator"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="20dp">
-        <!-- Dots will be added programmatically -->
+        <!-- Start Hunt Button -->
+        <Button
+            android:id="@+id/start_hunt_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Start Hunting"
+            android:textSize="16sp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="@android:color/holo_green_dark" />
+
+        <!-- Hunt Status Section (simplified) -->
+        <TextView
+            android:id="@+id/step_count_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Steps: 0 / 100"
+            android:textSize="20sp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp" />
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginBottom="16dp" />
+
     </LinearLayout>
 
-    <!-- Lure Count -->
-    <TextView
-        android:id="@+id/lure_count_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Lures: 0"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/holo_orange_dark"
-        android:drawableLeft="@drawable/ic_lure"
-        android:drawablePadding="8dp"
-        android:layout_gravity="start"
-        android:layout_marginLeft="16dp"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Lure Active Indicator -->
-    <TextView
-        android:id="@+id/lure_active_indicator"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="🎯 LURE ACTIVE"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:background="@android:color/holo_orange_dark"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp"
-        android:visibility="gone" />
-
-    <!-- Start Hunt Button -->
-    <Button
-        android:id="@+id/start_hunt_button"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Start Hunting"
-        android:textSize="16sp"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginBottom="24dp"
-        android:backgroundTint="@android:color/holo_green_dark" />
-
-    <!-- Hunt Status Section (simplified) -->
-    <TextView
-        android:id="@+id/step_count_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Steps: 0 / 100"
-        android:textSize="20sp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="8dp" />
-
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginBottom="16dp" />
-
-    <TextView
-        android:id="@+id/hunt_status_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="16sp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="8dp" />
-
-</LinearLayout>
+</ScrollView>
