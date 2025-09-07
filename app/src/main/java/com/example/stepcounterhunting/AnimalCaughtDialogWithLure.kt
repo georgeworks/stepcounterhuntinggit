@@ -262,8 +262,9 @@ class AnimalCaughtDialogWithLure(
 
     override fun onStart() {
         super.onStart()
+        val width = (resources.displayMetrics.density * 360).toInt() // 360dp
         dialog?.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
+            width,
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
 

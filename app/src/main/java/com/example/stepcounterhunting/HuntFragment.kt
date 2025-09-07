@@ -460,19 +460,19 @@ class HuntFragment : Fragment(), SensorEventListener {
         isHunting = prefs.getBoolean("is_hunting", false)
         stepCount = prefs.getInt("current_steps", 0)
         initialStepCount = prefs.getInt("initial_step_count", -1)
+        isUsingLure = prefs.getBoolean("using_lure", false)
 
         val serviceCompletedHunt = prefs.getBoolean("hunt_completed", false)
         val needsToShowCatch =
             serviceCompletedHunt && !hasCompletedCurrentHunt && stepCount >= STEPS_REQUIRED
-        isUsingLure = prefs.getBoolean("using_lure", false)
 
+        // Apply lure visual effects if lure is active
         if (isUsingLure && isHunting) {
-            huntStatusText.text = "🎯 LURE ACTIVE!"
             progressBar.progressTintList = android.content.res.ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(), android.R.color.holo_orange_light)
             )
         } else {
-            huntStatusText.text = ""  // Clear the text when no lure
+            progressBar.progressTintList = null
         }
 
         if (isHunting) {
@@ -485,8 +485,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                 selectedCountry = savedCountry
                 selectedRegionName = savedRegion
 
-                // The ViewPager position is already set correctly in setupRegionCards()
-                // Just update the current region
                 currentRegion = DataManager.usRegions.find { it.name == savedRegion }
                 selectedRegion = currentRegion
 
@@ -497,10 +495,16 @@ class HuntFragment : Fragment(), SensorEventListener {
                         android.R.color.holo_red_light
                     )
                 )
-                // Removed: currentRegionText.text = "Hunting in: $savedRegion"
+
+                // Set hunt status text based on current state
+                huntStatusText.text = when {
+                    needsToShowCatch -> "Goal reached! Opening your catch..."
+                    serviceCompletedHunt -> "Goal reached! Continue hunting or stop to reset."
+                    isUsingLure -> "🎯 LURE ACTIVE!"
+                    else -> ""
+                }
 
                 if (needsToShowCatch) {
-                    huntStatusText.text = "Goal reached! Opening your catch..."
                     view?.postDelayed({
                         if (!isShowingDialog && currentRegion != null) {
                             catchAnimal()
@@ -508,9 +512,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                     }, 500)
                 } else if (serviceCompletedHunt) {
                     hasCompletedCurrentHunt = true
-                    huntStatusText.text = "Goal reached! Continue hunting or stop to reset."
                 } else {
-                    huntStatusText.text = ""  // No need to show "Hunt in progress"
                     stepSensor?.let {
                         sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                     }
@@ -530,6 +532,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                         android.R.color.holo_green_dark
                     )
                 )
+                huntStatusText.text = ""
             }
         } else {
             startHuntButton.text = "Start Hunting"
@@ -539,10 +542,7 @@ class HuntFragment : Fragment(), SensorEventListener {
                     android.R.color.holo_green_dark
                 )
             )
-            // Removed: currentRegionText.text = ""
             huntStatusText.text = ""
-
-            // ViewPager position is already set correctly in setupRegionCards()
         }
 
         updateUI()
@@ -972,8 +972,13 @@ class HuntFragment : Fragment(), SensorEventListener {
             stepSensor?.let {
                 sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
             }
-            huntStatusText.text =
+
+            // Check if lure is still active for the status text
+            huntStatusText.text = if (isUsingLure) {
+                "🎯 LURE ACTIVE!"
+            } else {
                 ""
+            }
 
             try {
                 StepCounterService.startService(requireContext())
