@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import androidx.core.content.ContextCompat
 
 class AnimalCollectionAdapter(
     private var items: List<CollectionItem>,
@@ -86,9 +87,16 @@ class AnimalCollectionAdapter(
                         // Clear any border from previously uncaught state
                         borderFrame.background = null
 
-                        // Show image in color
-                        imageView.setImageResource(item.animal.imageResource)
+                        // Show image - special case for Hellbender
+                        if (item.animal.id == "app_6") {
+                            // Use custom image for Hellbender
+                            imageView.setImageResource(R.drawable.hellbendercard)
+                        } else {
+                            // Use normal animal image
+                            imageView.setImageResource(item.animal.imageResource)
+                        }
                         imageView.colorFilter = null
+                        imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
                         // Hide question mark and show hint text
                         questionMark.visibility = View.GONE
