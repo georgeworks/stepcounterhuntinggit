@@ -22,6 +22,9 @@ import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.net.Uri
 import android.widget.Switch
+import android.content.ActivityNotFoundException
+import android.content.ClipboardManager
+import android.content.ClipData
 
 class ProfileFragment : Fragment() {
 
@@ -66,6 +69,7 @@ class ProfileFragment : Fragment() {
     private var privacyPolicyText: TextView? = null
     private var versionText: TextView? = null
     private var buildText: TextView? = null
+    private var resetProgressButton: Button? = null
 
     private val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
@@ -234,6 +238,8 @@ class ProfileFragment : Fragment() {
         countriesGrid = view.findViewById(R.id.countries_grid)
         challengesGrid = view.findViewById(R.id.challenges_grid)
 
+        resetProgressButton = view.findViewById(R.id.reset_progress_button)
+
 
         notificationsSwitch = view.findViewById(R.id.notifications_switch)
         sendFeedbackText = view.findViewById(R.id.send_feedback_text)
@@ -260,15 +266,26 @@ class ProfileFragment : Fragment() {
         // Send Feedback
         sendFeedbackText?.setOnClickListener {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:")
-                putExtra(Intent.EXTRA_EMAIL, arrayOf("admin@EastLumenz.com")) // Change this!
+                data = Uri.parse("mailto:admin@EastLumenz.com")
                 putExtra(Intent.EXTRA_SUBJECT, "Step Hunter Feedback")
                 putExtra(Intent.EXTRA_TEXT, "App Version: 0.1.0\nBuild: 1\n\nFeedback:\n")
             }
-            if (intent.resolveActivity(requireActivity().packageManager) != null) {
+
+            try {
                 startActivity(intent)
-            } else {
-                Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+            } catch (e: ActivityNotFoundException) {
+                // Fallback: show dialog with email address they can copy
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Send Feedback")
+                    .setMessage("No email app found.\n\nPlease send feedback to:\nyour-email@example.com")
+                    .setPositiveButton("Copy Email") { _, _ ->
+                        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = ClipData.newPlainText("email", "your-email@example.com")
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(context, "Email copied to clipboard", Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton("OK", null)
+                    .show()
             }
         }
 
@@ -289,6 +306,25 @@ class ProfileFragment : Fragment() {
         // Version info
         versionText?.text = "Version 0.4.0 (Beta)"
         buildText?.text = "Build 1"
+    }
+    private fun showResetProgressDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Reset All Progress?")
+            .setMessage("This will delete ALL your data:\n• Animals caught\n• Steps counted\n• Lures earned\n• Streak progress\n\nThis cannot be undone!")
+            .setPositiveButton("Reset") { _, _ ->
+                // Clear all SharedPreferences
+                context?.getSharedPreferences("StepCounter", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
+                context?.getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
+                context?.getSharedPreferences("StreakData", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
+
+                // Reinitialize DataManager
+                DataManager.init(requireContext())
+
+                // Restart app
+                activity?.recreate()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
 
