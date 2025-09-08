@@ -20,7 +20,12 @@ class AnimalDetailDialog(
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.dialog_animal_detail, container, false)
+        // Choose layout based on animal
+        return if (animal.id == "app_6") {
+            inflater.inflate(R.layout.dialog_animal_detail_overlay, container, false)
+        } else {
+            inflater.inflate(R.layout.dialog_animal_detail, container, false)
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -28,19 +33,33 @@ class AnimalDetailDialog(
 
         val animalImage: ImageView = view.findViewById(R.id.detail_animal_image)
         val animalName: TextView = view.findViewById(R.id.detail_animal_name)
-        val animalRarity: TextView = view.findViewById(R.id.detail_animal_rarity)
-        val animalDescription: TextView = view.findViewById(R.id.detail_animal_description)
-        val animalFunFact: TextView = view.findViewById(R.id.detail_animal_fun_fact)
-        val animalRegion: TextView = view.findViewById(R.id.detail_animal_region)
+        val animalRarity: TextView? = view.findViewById(R.id.detail_animal_rarity)
+        val animalDescription: TextView? = view.findViewById(R.id.detail_animal_description)
+        val animalFunFact: TextView? = view.findViewById(R.id.detail_animal_fun_fact)
+        val animalRegion: TextView? = view.findViewById(R.id.detail_animal_region)
         val closeButton: Button = view.findViewById(R.id.close_button)
 
-        animalImage.setImageResource(animal.imageResource)
-        animalName.text = animal.name
-        animalRarity.text = animal.rarity.displayName
-        animalRarity.setTextColor(Color.parseColor(animal.rarity.color))
-        animalDescription.text = animal.description
-        animalFunFact.text = "Fun Fact: ${animal.funFact}"
-        animalRegion.text = "Found in: ${animal.region}"
+        if (animal.id == "app_6") {
+            // Hellbender with overlay layout
+            animalImage.setImageResource(R.drawable.hellbendercardfull)
+            animalName.text = animal.name
+
+            // Only set these if they exist in your overlay layout
+            animalRarity?.text = animal.rarity.displayName
+            animalDescription?.text = animal.description
+            animalFunFact?.text = "Fun Fact: ${animal.funFact}"
+            animalRegion?.text = "Found in: ${animal.region}"
+
+        } else {
+            // Normal animals with standard layout
+            animalImage.setImageResource(animal.imageResource)
+            animalName.text = animal.name
+            animalRarity?.text = animal.rarity.displayName
+            animalRarity?.setTextColor(Color.parseColor(animal.rarity.color))
+            animalDescription?.text = animal.description
+            animalFunFact?.text = "Fun Fact: ${animal.funFact}"
+            animalRegion?.text = "Found in: ${animal.region}"
+        }
 
         closeButton.setOnClickListener {
             dismiss()
@@ -50,6 +69,10 @@ class AnimalDetailDialog(
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Add padding/margin to the dialog window
+        dialog.window?.decorView?.setPadding(50, 100, 50, 100) // left, top, right, bottom in pixels
+
         return dialog
     }
 }
