@@ -19,6 +19,9 @@ import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import androidx.core.content.ContextCompat
+import android.content.Intent
+import android.net.Uri
+import android.widget.Switch
 
 class ProfileFragment : Fragment() {
 
@@ -57,8 +60,12 @@ class ProfileFragment : Fragment() {
     private var countriesGrid: GridLayout? = null
     private var challengesGrid: GridLayout? = null
 
-    // Button
-    private var replayTutorialButton: Button? = null
+    // ButtoN
+    private var notificationsSwitch: Switch? = null
+    private var sendFeedbackText: TextView? = null
+    private var privacyPolicyText: TextView? = null
+    private var versionText: TextView? = null
+    private var buildText: TextView? = null
 
     private val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
@@ -226,7 +233,64 @@ class ProfileFragment : Fragment() {
         regionsGrid = view.findViewById(R.id.regions_grid)
         countriesGrid = view.findViewById(R.id.countries_grid)
         challengesGrid = view.findViewById(R.id.challenges_grid)
+
+
+        notificationsSwitch = view.findViewById(R.id.notifications_switch)
+        sendFeedbackText = view.findViewById(R.id.send_feedback_text)
+        privacyPolicyText = view.findViewById(R.id.privacy_policy_text)
+        versionText = view.findViewById(R.id.version_text)
+        buildText = view.findViewById(R.id.build_text)
+
+        initializeSettings()
     }
+    private fun initializeSettings() {
+        val prefs = requireContext().getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
+
+
+        // Notifications
+        val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
+        notificationsSwitch?.isChecked = notificationsEnabled
+        notificationsSwitch?.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("notifications_enabled", isChecked).apply()
+            Toast.makeText(context,
+                if (isChecked) "Notifications enabled" else "Notifications disabled",
+                Toast.LENGTH_SHORT).show()
+        }
+
+        // Send Feedback
+        sendFeedbackText?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:")
+                putExtra(Intent.EXTRA_EMAIL, arrayOf("admin@EastLumenz.com")) // Change this!
+                putExtra(Intent.EXTRA_SUBJECT, "Step Hunter Feedback")
+                putExtra(Intent.EXTRA_TEXT, "App Version: 0.1.0\nBuild: 1\n\nFeedback:\n")
+            }
+            if (intent.resolveActivity(requireActivity().packageManager) != null) {
+                startActivity(intent)
+            } else {
+                Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Privacy Policy
+        privacyPolicyText?.setOnClickListener {
+            // For now, show a dialog. Later you can open a web URL
+            AlertDialog.Builder(requireContext())
+                .setTitle("Privacy Policy")
+                .setMessage("Step Hunter collects minimal data:\n\n" +
+                        "• Step count data stays on your device\n" +
+                        "• No personal information is shared\n" +
+                        "• No ads or tracking\n\n" +
+                        "Full policy coming soon.")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+
+        // Version info
+        versionText?.text = "Version 0.4.0 (Beta)"
+        buildText?.text = "Build 1"
+    }
+
 
     private fun updateStats() {
         // Get data from DataManager and SharedPreferences
