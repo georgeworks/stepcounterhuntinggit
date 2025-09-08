@@ -352,8 +352,11 @@ class ProfileFragment : Fragment() {
         }
     }
 
+// In ProfileFragment.kt, update the updateEnhancedStats function:
+
     private fun updateEnhancedStats(stats: UserStats) {
         val prefs = requireContext().getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
+        val streakPrefs = requireContext().getSharedPreferences("StreakData", Context.MODE_PRIVATE)
 
         // Get additional data from DataManager
         val collection = DataManager.getCollection()
@@ -362,7 +365,7 @@ class ProfileFragment : Fragment() {
         val exploredRegions = DataManager.getExploredRegions()
 
         // Calculate total regions
-        val totalRegions = DataManager.usRegions.size // Rough estimate for other countries
+        val totalRegions = DataManager.usRegions.size
 
         // Update main stat cards
         totalStepsValue?.text = numberFormat.format(stats.totalSteps)
@@ -384,12 +387,20 @@ class ProfileFragment : Fragment() {
         val dailyAvg = stats.totalSteps / daysSinceFirstLaunch.toInt()
         dailyAverageSteps?.text = "${numberFormat.format(dailyAvg)} daily avg"
 
-        // Calculate lures earned total (duplicates found)
-        val duplicatesFound = collection.size - uniqueAnimals.size
-        luresEarnedTotal?.text = "$duplicatesFound earned total"
+        // Calculate total lures earned from ALL sources
 
-        // Update rarity distribution - NOW USING FULL COLLECTION (INCLUDING DUPLICATES)
-        updateRarityDistribution(collection)  // Changed from uniqueAnimals to collection
+        // 1. Lures from duplicates
+        val duplicatesFound = collection.size - uniqueAnimals.size
+
+        // 2. Lures from streaks (tracked in SharedPreferences)
+        val luresFromStreaks = streakPrefs.getInt("total_lures_earned_from_streaks", 0)
+
+        // Total earned = duplicates + streak rewards
+        val totalLuresEarned = duplicatesFound + luresFromStreaks
+        luresEarnedTotal?.text = "$totalLuresEarned earned total"
+
+        // Update rarity distribution
+        updateRarityDistribution(collection)
 
         // Update hunt statistics
         updateHuntStatistics(stats, collection, exploredRegions)

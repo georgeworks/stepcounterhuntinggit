@@ -464,6 +464,8 @@ class HuntFragment : Fragment(), SensorEventListener {
             }
         }
     }
+// In HuntFragment.kt, update the recordDailyHunt method:
+
     private fun recordDailyHunt() {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
             .format(java.util.Date())
@@ -479,6 +481,9 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Get total consecutive days
         var totalConsecutiveDays = streakPrefs.getInt("total_consecutive_days", 0)
+
+        // Get total lures earned from streaks (for tracking)
+        var totalLuresFromStreaks = streakPrefs.getInt("total_lures_earned_from_streaks", 0)
 
         // Check if this is a new day
         if (lastCompletedDate != today) {
@@ -543,6 +548,14 @@ class HuntFragment : Fragment(), SensorEventListener {
                     DataManager.addLure()
                 }
 
+                // Track total lures earned from streaks
+                totalLuresFromStreaks += luresAwarded
+
+                // IMPORTANT: Save the updated total immediately
+                streakPrefs.edit()
+                    .putInt("total_lures_earned_from_streaks", totalLuresFromStreaks)
+                    .apply()
+
                 // Show celebration dialog
                 AlertDialog.Builder(requireContext())
                     .setTitle("Streak Reward!")
@@ -555,11 +568,12 @@ class HuntFragment : Fragment(), SensorEventListener {
                     .show()
             }
 
-            // Save updated streak data
+            // Save updated streak data including total lures earned
             streakPrefs.edit()
                 .putString("last_hunt_date", today)
                 .putStringSet("streak_days", mutableStreakDays)
                 .putInt("total_consecutive_days", totalConsecutiveDays)
+                .putInt("total_lures_earned_from_streaks", totalLuresFromStreaks)
                 .apply()
 
             // Update UI
