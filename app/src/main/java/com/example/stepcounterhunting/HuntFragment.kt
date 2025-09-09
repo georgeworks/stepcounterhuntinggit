@@ -1139,15 +1139,17 @@ class HuntFragment : Fragment(), SensorEventListener {
 
             // UPDATE THE REGION CARDS TO REFLECT NEW COLLECTION
             activity?.runOnUiThread {
-                // Update the collection data in the adapter - convert List to Set
+                // Update the collection data in the adapter
                 val updatedCollection = DataManager.getCollection().toSet()
                 regionAdapter.updateCollection(updatedCollection)
 
-                // If you want to update only the specific region card that changed
-                val regionIndex = DataManager.usRegions.indexOfFirst { it.name == region.name }
-                if (regionIndex != -1) {
-                    regionAdapter.notifyItemChanged(regionIndex)
-                }
+                // Force a complete refresh of the ViewPager2
+                regionAdapter.notifyDataSetChanged()  // Add this line
+
+                // Also update the current page to ensure it refreshes
+                val currentPosition = regionViewPager.currentItem
+                regionViewPager.adapter = regionAdapter  // Re-set the adapter
+                regionViewPager.setCurrentItem(currentPosition, false)  // Restore position
 
                 updateLureDisplay()
             }

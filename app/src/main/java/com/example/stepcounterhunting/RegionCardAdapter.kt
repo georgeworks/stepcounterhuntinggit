@@ -111,8 +111,6 @@ class RegionCardAdapter(
 
     fun updateCollection(newCollection: Set<Animal>) {
         collection = newCollection
-        // Notify that all items might have changed since collection affects all cards
-        notifyDataSetChanged()
     }
 
     fun getSelectedRegion(): Region? {
