@@ -304,7 +304,7 @@ class ProfileFragment : Fragment() {
         }
 
         // Version info
-        versionText?.text = "Version 0.4.0 (Beta)"
+        versionText?.text = "Version 0.5.0 (Beta)"
         buildText?.text = "Build 1"
     }
     private fun showResetProgressDialog() {
