@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="360dp"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_margin="16dp"
     android:layout_gravity="center"
     app:cardCornerRadius="16dp"
     app:cardElevation="8dp">
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxHeight="500dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -119,7 +116,5 @@
                 android:padding="12dp" />
 
         </LinearLayout>
-
-    </ScrollView>
 
 </androidx.cardview.widget.CardView>

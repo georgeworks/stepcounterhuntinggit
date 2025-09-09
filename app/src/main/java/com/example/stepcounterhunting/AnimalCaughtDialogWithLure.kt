@@ -19,6 +19,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.DialogFragment
+import android.view.WindowManager
+
 
 class AnimalCaughtDialogWithLure(
     private val animal: Animal,
@@ -254,21 +256,35 @@ class AnimalCaughtDialogWithLure(
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState)
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.requestFeature(Window.FEATURE_NO_TITLE)
         return dialog
+    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setStyle(STYLE_NO_TITLE, 0)  // Add this - don't use STYLE_NO_FRAME
     }
 
     override fun onStart() {
         super.onStart()
-        val width = (resources.displayMetrics.density * 360).toInt() // 360dp
-        dialog?.window?.setLayout(
-            width,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
 
-        // Add some margin
-        dialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog?.window?.apply {
+            // Use smaller width - 300dp instead of 360dp
+            val width = (300 * resources.displayMetrics.density).toInt()
+
+            setLayout(
+                width,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+
+            setBackgroundDrawableResource(android.R.color.transparent)
+
+            // Add dim effect
+            setDimAmount(0.7f)
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        }
+
+        dialog?.setCanceledOnTouchOutside(false)
     }
 }

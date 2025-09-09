@@ -1177,31 +1177,50 @@ class HuntFragment : Fragment(), SensorEventListener {
         }
 
         // Define custom weights for lure selection
-        // These override the normal rarity weights when a lure is active
         val lureWeights = mapOf(
             Rarity.UNCOMMON to 50,   // 50% chance
             Rarity.RARE to 35,        // 35% chance
             Rarity.LEGENDARY to 15    // 15% chance
         )
 
-        // Calculate total weight based on available animals with lure weights
-        val totalWeight = nonCommonAnimals.sumOf { animal ->
-            lureWeights[animal.rarity] ?: 0
-        }
-
-        // Select based on weighted random
+        // First, determine which rarity tier we're selecting with lure weights
+        val totalWeight = lureWeights.values.sum()
         var random = Random.nextInt(totalWeight)
+        var selectedRarity: Rarity? = null
 
-        for (animal in nonCommonAnimals) {
-            val weight = lureWeights[animal.rarity] ?: 0
+        for ((rarity, weight) in lureWeights) {
             random -= weight
             if (random < 0) {
-                return animal
+                selectedRarity = rarity
+                break
             }
         }
 
-        // Fallback (shouldn't reach here)
-        return nonCommonAnimals.last()
+        // Get animals of the selected rarity
+        val animalsOfSelectedRarity = nonCommonAnimals.filter { it.rarity == selectedRarity }
+        if (animalsOfSelectedRarity.isEmpty()) {
+            return nonCommonAnimals.last() // Fallback
+        }
+
+        // Apply the 90% uncollected preference logic (same as in selectRandomAnimal)
+        val collection = DataManager.getCollection()
+        val uncollectedAnimals = animalsOfSelectedRarity.filter { animal ->
+            !collection.contains(animal)
+        }
+
+        // If there are uncollected animals of this rarity
+        return if (uncollectedAnimals.isNotEmpty()) {
+            // 90% chance to get an uncollected animal
+            if (Random.nextInt(100) < 90) {
+                uncollectedAnimals.random()
+            } else {
+                // 10% chance to get any animal of this rarity
+                animalsOfSelectedRarity.random()
+            }
+        } else {
+            // All animals of this rarity collected - equal chance for all
+            animalsOfSelectedRarity.random()
+        }
     }
 
     private fun updateLureDisplay() {
@@ -1248,7 +1267,8 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun selectRandomAnimal(animals: List<Animal>): Animal {
-        val totalWeight = animals.sumOf { it.rarity.weight }
+        // Calculate total weight based on rarity weights, not individual animals
+        val totalWeight = Rarity.values().sumOf { it.weight }  // This will always be 100
         var random = Random.nextInt(totalWeight)
 
         // First, determine which rarity tier we're selecting

@@ -16,6 +16,8 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
+import android.view.Window
+import android.view.WindowManager
 
 class AnimalCaughtDialog(
     private val animal: Animal,
@@ -210,20 +212,35 @@ class AnimalCaughtDialog(
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState)
+        val dialog = Dialog(requireContext())  // Use basic Dialog, not super
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         return dialog
     }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Remove the theme setting - this might be causing full screen
+        setStyle(STYLE_NO_TITLE, 0)  // Changed from STYLE_NO_FRAME
+    }
+
 
     override fun onStart() {
         super.onStart()
-        val width = (resources.displayMetrics.density * 360).toInt() // 360dp
-        dialog?.window?.setLayout(
-            width,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
 
-        // Add some margin
-        dialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog?.window?.apply {
+            // Force small size
+            val width = (280 * resources.displayMetrics.density).toInt()  // Fixed 280dp width
+            val height = ViewGroup.LayoutParams.WRAP_CONTENT
+
+            setLayout(width, height)
+            setBackgroundDrawableResource(android.R.color.transparent)
+
+            // Add dim background
+            setDimAmount(0.7f)
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        }
+
+        // Make sure dialog can't be cancelled by touching outside
+        dialog?.setCanceledOnTouchOutside(false)
     }
 }
