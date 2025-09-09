@@ -1251,14 +1251,44 @@ class HuntFragment : Fragment(), SensorEventListener {
         val totalWeight = animals.sumOf { it.rarity.weight }
         var random = Random.nextInt(totalWeight)
 
-        for (animal in animals) {
-            random -= animal.rarity.weight
-            if (random < 0) {
-                return animal
+        // First, determine which rarity tier we're selecting
+        var selectedRarity: Rarity? = null
+        var accumulatedWeight = 0
+
+        for (rarity in Rarity.values()) {
+            accumulatedWeight += rarity.weight
+            if (random < accumulatedWeight) {
+                selectedRarity = rarity
+                break
             }
         }
 
-        return animals.last()
+        // Get animals of the selected rarity
+        val animalsOfSelectedRarity = animals.filter { it.rarity == selectedRarity }
+        if (animalsOfSelectedRarity.isEmpty()) {
+            return animals.last() // Fallback if no animals of this rarity
+        }
+
+        // Check for uncollected animals of this rarity
+        val collection = DataManager.getCollection()
+        val uncollectedAnimals = animalsOfSelectedRarity.filter { animal ->
+            !collection.contains(animal)
+        }
+
+        // If there are uncollected animals of this rarity
+        return if (uncollectedAnimals.isNotEmpty()) {
+            // 90% chance to get an uncollected animal
+            if (Random.nextInt(100) < 90) {
+                // Pick randomly from uncollected animals
+                uncollectedAnimals.random()
+            } else {
+                // 10% chance to get any animal of this rarity (including duplicates)
+                animalsOfSelectedRarity.random()
+            }
+        } else {
+            // All animals of this rarity collected - equal chance for all
+            animalsOfSelectedRarity.random()
+        }
     }
 
     override fun onPause() {
