@@ -37,18 +37,17 @@ class AnimalDetailDialog(
         val animalDescription: TextView? = view.findViewById(R.id.detail_animal_description)
         val animalFunFact: TextView? = view.findViewById(R.id.detail_animal_fun_fact)
         val animalRegion: TextView? = view.findViewById(R.id.detail_animal_region)
-        val closeButton: Button = view.findViewById(R.id.close_button)
 
         if (animal.id == "app_6") {
             // Hellbender with overlay layout
-            animalImage.setImageResource(R.drawable.hellbendercardfull)
+            animalImage.setImageResource(R.drawable.hellbenderfull)
             animalName.text = animal.name
 
             // Only set these if they exist in your overlay layout
             animalRarity?.text = animal.rarity.displayName
             animalDescription?.text = animal.description
-            animalFunFact?.text = "Fun Fact: ${animal.funFact}"
-            animalRegion?.text = "Found in: ${animal.region}"
+            animalFunFact?.text = "${animal.funFact}"
+            animalRegion?.text = "${animal.region}"
 
         } else {
             // Normal animals with standard layout
@@ -57,12 +56,8 @@ class AnimalDetailDialog(
             animalRarity?.text = animal.rarity.displayName
             animalRarity?.setTextColor(Color.parseColor(animal.rarity.color))
             animalDescription?.text = animal.description
-            animalFunFact?.text = "Fun Fact: ${animal.funFact}"
+            animalFunFact?.text = "${animal.funFact}"
             animalRegion?.text = "Found in: ${animal.region}"
-        }
-
-        closeButton.setOnClickListener {
-            dismiss()
         }
     }
 
@@ -71,7 +66,10 @@ class AnimalDetailDialog(
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         // Add padding/margin to the dialog window
-        dialog.window?.decorView?.setPadding(50, 100, 50, 100) // left, top, right, bottom in pixels
+        dialog.window?.decorView?.setPadding(10, 10, 10, 10)
+
+        // Make dialog dismissible by touching outside
+        dialog.setCanceledOnTouchOutside(true)
 
         return dialog
     }
