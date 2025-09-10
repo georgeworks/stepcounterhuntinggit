@@ -66,6 +66,9 @@ class HuntFragment : Fragment(), SensorEventListener {
     private lateinit var streakLabel: TextView
     private var currentStreakDay = 0
     private var lastHuntDate: String = ""
+    private val catchLock = Object()
+    private var lastCatchAttempt = 0L
+    private var isCatchInProgress = false
 
     private var tutorialOverlay: TutorialOverlay? = null
     private var hasPendingTutorial = false
@@ -111,6 +114,56 @@ class HuntFragment : Fragment(), SensorEventListener {
         stepSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         prefs = requireContext().getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
 
+        // Check for actual first launch - check BOTH SharedPreferences
+        val huntFragmentInitialized = prefs.getBoolean("app_initialized", false)
+        val dataManagerPrefs = requireContext().getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)
+        val dataManagerInitialized = dataManagerPrefs.getBoolean("app_initialized", false)
+
+        val isFirstLaunch = !huntFragmentInitialized || !dataManagerInitialized
+
+        // If EITHER is not initialized, treat as first launch and clear EVERYTHING
+        if (isFirstLaunch) {
+            // Clear all SharedPreferences
+            prefs.edit().clear().apply()  // Clear first
+            dataManagerPrefs.edit().clear().apply()  // Clear first
+
+            // Clear streak data
+            requireContext().getSharedPreferences("StreakData", Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply()
+
+            // Re-initialize DataManager to ensure it's clean
+            DataManager.init(requireContext())
+
+            // NOW set initialized flags after clearing
+            prefs.edit()
+                .putBoolean("app_initialized", true)
+                .putBoolean("is_hunting", false)  // Explicitly set hunting to false
+                .putInt("current_steps", 0)
+                .putInt("initial_step_count", -1)
+                .putBoolean("hunt_completed", false)
+                .putBoolean("catch_processed", false)
+                .putBoolean("using_lure", false)
+                .apply()
+
+            dataManagerPrefs.edit()
+                .putBoolean("app_initialized", true)
+                .apply()
+
+            // Reset all state variables to ensure clean state
+            isHunting = false
+            stepCount = 0
+            initialStepCount = -1
+            hasCompletedCurrentHunt = false
+            isShowingDialog = false
+            isCatchInProgress = false
+            currentRegion = null
+            selectedRegion = null
+            huntingCountry = null
+            huntingRegionName = null
+        }
+
         // Initialize notification manager if we have permission
         if (hasNotificationPermission()) {
             notificationManager =
@@ -118,13 +171,28 @@ class HuntFragment : Fragment(), SensorEventListener {
             createNotificationChannel()
         }
 
-        // IMPORTANT: Restore hunt state BEFORE setting up UI components
-        // This ensures isHunting and hunting region are known
-        restoreHuntState()
+        // NOW restore hunt state - after clearing on first launch
+        if (!isFirstLaunch) {
+            restoreHuntState()
+        } else {
+            // On first launch, ensure clean UI state
+            startHuntButton.text = "Start Hunting"
+            startHuntButton.setBackgroundColor(
+                ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark)
+            )
+            huntStatusText.text = ""
+            stepCountText.text = "Steps: 0 / $STEPS_REQUIRED"
+            progressBar.progress = 0
+        }
 
         // Then setup UI components with the correct initial state
         setupCountrySelector()
         setupRegionCards()
+
+        // Only check for pending catch if both were already initialized
+        if (!isFirstLaunch) {
+            checkForPendingCatch()
+        }
 
         // Update displays after everything is set up
         updateLureDisplay()
@@ -153,6 +221,40 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         // Initialize tutorial overlay
         initializeTutorial()
+    }
+    private fun checkForPendingCatch() {
+        val huntCompleted = prefs.getBoolean("hunt_completed", false)
+        val catchProcessed = prefs.getBoolean("catch_processed", false)
+        val currentSteps = prefs.getInt("current_steps", 0)
+
+        // Remove the isHunting check to make it work when opening from notification
+        if (huntCompleted && !catchProcessed && currentSteps >= STEPS_REQUIRED) {
+            // Make sure we have a valid region
+            if (currentRegion == null) {
+                val savedRegion = prefs.getString("current_region", "") ?: ""
+                currentRegion = DataManager.usRegions.find { it.name == savedRegion }
+            }
+
+            // Also restore hunting state if needed
+            if (!isHunting) {
+                val savedCountry = prefs.getString("current_country", "")
+                val savedRegion = prefs.getString("current_region", "")
+                if (!savedCountry.isNullOrEmpty() && !savedRegion.isNullOrEmpty()) {
+                    isHunting = true
+                    huntingCountry = savedCountry
+                    huntingRegionName = savedRegion
+                }
+            }
+
+            if (currentRegion != null) {
+                // Force reset these flags before calling catchAnimal
+                hasCompletedCurrentHunt = false
+                isShowingDialog = false
+                isCatchInProgress = false
+
+                catchAnimal()
+            }
+        }
     }
 
     private fun setupCountrySelector() {
@@ -716,10 +818,6 @@ class HuntFragment : Fragment(), SensorEventListener {
         initialStepCount = prefs.getInt("initial_step_count", -1)
         isUsingLure = prefs.getBoolean("using_lure", false)
 
-        val serviceCompletedHunt = prefs.getBoolean("hunt_completed", false)
-        val needsToShowCatch =
-            serviceCompletedHunt && !hasCompletedCurrentHunt && stepCount >= STEPS_REQUIRED
-
         // Apply lure visual effects if lure is active
         if (isUsingLure && isHunting) {
             progressBar.progressTintList = android.content.res.ColorStateList.valueOf(
@@ -750,29 +848,23 @@ class HuntFragment : Fragment(), SensorEventListener {
                     )
                 )
 
+                val huntCompleted = prefs.getBoolean("hunt_completed", false)
+                val catchProcessed = prefs.getBoolean("catch_processed", false)
+
                 // Set hunt status text based on current state
                 huntStatusText.text = when {
-                    needsToShowCatch -> "Goal reached! Opening your catch..."
-                    serviceCompletedHunt -> "Goal reached! Continue hunting or stop to reset."
+                    huntCompleted && !catchProcessed -> "Goal reached! Opening your catch..."
+                    huntCompleted && catchProcessed -> "Goal reached! Continue hunting or stop to reset."
                     isUsingLure -> "🎯 LURE ACTIVE!"
                     else -> ""
                 }
 
-                if (needsToShowCatch) {
-                    view?.postDelayed({
-                        if (!isShowingDialog && currentRegion != null) {
-                            catchAnimal()
-                        }
-                    }, 500)
-                } else if (serviceCompletedHunt) {
+                if (huntCompleted && catchProcessed) {
                     hasCompletedCurrentHunt = true
-                } else {
+                } else if (!huntCompleted) {
                     stepSensor?.let {
                         sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                     }
-                }
-
-                if (!serviceCompletedHunt) {
                     showNotification()
                 }
             } else {
@@ -955,9 +1047,11 @@ class HuntFragment : Fragment(), SensorEventListener {
             )
         )
         huntStatusText.text = ""
-        // Removed: currentRegionText.text = ""
 
         sensorManager?.unregisterListener(this)
+
+        // Cancel the notification when stopping hunting
+        cancelNotification()
 
         try {
             StepCounterService.stopService(requireContext())
@@ -969,6 +1063,11 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
+        // Add safety check for first launch edge case
+        if (!prefs.getBoolean("app_initialized", false)) {
+            return
+        }
+
         if (isHunting && !hasCompletedCurrentHunt && event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
             if (initialStepCount < 0) {
                 initialStepCount = event.values[0].toInt()
@@ -979,18 +1078,23 @@ class HuntFragment : Fragment(), SensorEventListener {
                 return
             }
 
-            stepCount = event.values[0].toInt() - initialStepCount
+            val newStepCount = event.values[0].toInt() - initialStepCount
 
-            if (stepCount < 0) {
+            // Protection against invalid values
+            if (newStepCount < 0 || newStepCount > STEPS_REQUIRED * 10) {
+                // Reset if we get an impossible value
                 initialStepCount = event.values[0].toInt()
                 stepCount = 0
                 prefs.edit()
                     .putInt("initial_step_count", initialStepCount)
                     .putInt("current_steps", 0)
                     .apply()
-            } else {
-                prefs.edit().putInt("current_steps", stepCount).apply()
+                return
             }
+
+            stepCount = newStepCount
+
+            prefs.edit().putInt("current_steps", stepCount).apply()
 
             if (stepCount >= STEPS_REQUIRED && !hasCompletedCurrentHunt && !isShowingDialog) {
                 catchAnimal()
@@ -1094,23 +1198,34 @@ class HuntFragment : Fragment(), SensorEventListener {
     }
 
     private fun catchAnimal() {
-        if (hasCompletedCurrentHunt || isShowingDialog) {
-            return
-        }
+        synchronized(catchLock) {
+            val currentTime = System.currentTimeMillis()
+            if (isCatchInProgress || (currentTime - lastCatchAttempt) < 2000) {
+                return
+            }
 
-        val catchProcessed = prefs.getBoolean("catch_processed", false)
-        if (catchProcessed) {
+            if (hasCompletedCurrentHunt || isShowingDialog) {
+                return
+            }
+
+            val catchProcessed = prefs.getBoolean("catch_processed", false)
+            if (catchProcessed) {
+                hasCompletedCurrentHunt = true
+                return
+            }
+
+            // Set flags immediately
+            isCatchInProgress = true
+            lastCatchAttempt = currentTime
             hasCompletedCurrentHunt = true
-            return
+            isShowingDialog = true
+
+            // DON'T set catch_processed to true yet - wait until dialog is shown
+            prefs.edit()
+                .putBoolean("hunt_completed", true)
+                // REMOVED: .putBoolean("catch_processed", true)
+                .commit()
         }
-
-        hasCompletedCurrentHunt = true
-        isShowingDialog = true
-
-        prefs.edit()
-            .putBoolean("hunt_completed", true)
-            .putBoolean("catch_processed", true)
-            .apply()
 
         sensorManager?.unregisterListener(this)
 
@@ -1139,24 +1254,25 @@ class HuntFragment : Fragment(), SensorEventListener {
 
             // UPDATE THE REGION CARDS TO REFLECT NEW COLLECTION
             activity?.runOnUiThread {
-                // Update the collection data in the adapter
                 val updatedCollection = DataManager.getCollection().toSet()
                 regionAdapter.updateCollection(updatedCollection)
+                regionAdapter.notifyDataSetChanged()
 
-                // Force a complete refresh of the ViewPager2
-                regionAdapter.notifyDataSetChanged()  // Add this line
-
-                // Also update the current page to ensure it refreshes
                 val currentPosition = regionViewPager.currentItem
-                regionViewPager.adapter = regionAdapter  // Re-set the adapter
-                regionViewPager.setCurrentItem(currentPosition, false)  // Restore position
+                regionViewPager.adapter = regionAdapter
+                regionViewPager.setCurrentItem(currentPosition, false)
 
                 updateLureDisplay()
             }
 
+            // NOW set catch_processed to true after successfully preparing the dialog
+            prefs.edit().putBoolean("catch_processed", true).apply()
+
             val dialog = AnimalCaughtDialogWithLure(caughtAnimal, isDuplicate, isUsingLure) {
                 activity?.runOnUiThread {
                     updateLureDisplay()
+                    // Reset the flag when dialog is dismissed
+                    isCatchInProgress = false
                 }
                 continueHunting()
             }
@@ -1164,8 +1280,12 @@ class HuntFragment : Fragment(), SensorEventListener {
 
             isUsingLure = false
             prefs.edit().putBoolean("using_lure", false).apply()
+        } ?: run {
+            // If currentRegion is null, reset the flag
+            isCatchInProgress = false
         }
     }
+
 
     private fun selectRareAnimal(animals: List<Animal>): Animal {
         // Filter out COMMON animals - include Uncommon, Rare, and Legendary
@@ -1341,23 +1461,25 @@ class HuntFragment : Fragment(), SensorEventListener {
 
         if (isHunting) {
             val latestSteps = prefs.getInt("current_steps", 0)
-            val huntCompleted = prefs.getBoolean("hunt_completed", false)
-
             stepCount = latestSteps
 
-            if (huntCompleted && !hasCompletedCurrentHunt && !isShowingDialog && stepCount >= STEPS_REQUIRED) {
-                updateUI()
-                if (currentRegion != null) {
-                    catchAnimal()
-                }
-            } else if (!hasCompletedCurrentHunt) {
+            // Check for pending catch again in case it wasn't handled in onViewCreated
+            checkForPendingCatch()
+
+            val huntCompleted = prefs.getBoolean("hunt_completed", false)
+            if (!huntCompleted && !hasCompletedCurrentHunt) {
                 stepSensor?.let {
                     sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
                 }
-                updateUI()
             }
+
+            updateUI()
         }
-        isShowingDialog = false
+
+        // Reset isShowingDialog only if no dialog is actually showing
+        if (childFragmentManager.findFragmentByTag("animal_caught") == null) {
+            isShowingDialog = false
+        }
     }
 
     private fun checkForTutorialOnResume() {
