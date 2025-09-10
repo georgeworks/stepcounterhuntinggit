@@ -27,7 +27,7 @@ class StepCounterService : Service(), SensorEventListener {
         const val CHANNEL_ID = "StepHuntingChannel"
         const val NOTIFICATION_ID = 2001
         const val STEPS_REQUIRED = 100
-        const val NOTIFICATION_UPDATE_INTERVAL = 10 // Update every 10 steps
+        const val NOTIFICATION_UPDATE_INTERVAL = 1 // Update every 10 steps
 
         fun startService(context: Context) {
             val intent = Intent(context, StepCounterService::class.java)
