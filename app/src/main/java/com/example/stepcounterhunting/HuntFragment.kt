@@ -74,6 +74,7 @@ class HuntFragment : Fragment(), SensorEventListener {
     private var hasPendingTutorial = false
     private var selectedCountryIndex = 0
     private var selectedRegion: Region? = null
+    private var lastFragmentNotificationUpdate = 0
 
     companion object {
         const val STEPS_REQUIRED = 100
