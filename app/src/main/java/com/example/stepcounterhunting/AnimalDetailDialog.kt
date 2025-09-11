@@ -56,17 +56,15 @@ class AnimalDetailDialog(
             animalDescription?.text = animal.description
             animalFunFact?.text = "${animal.funFact}"
         }
+
+        view.setOnClickListener {
+            dismiss()
+        }
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        // Add padding/margin to the dialog window
-        dialog.window?.decorView?.setPadding(10, 10, 10, 10)
-
-        // Make dialog dismissible by touching outside
-        dialog.setCanceledOnTouchOutside(true)
 
         return dialog
     }
