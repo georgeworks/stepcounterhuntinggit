@@ -18,6 +18,7 @@ class AnimalCollectionAdapter(
     private var items: List<CollectionItem>,
     private val onAnimalClick: (CollectionItem.AnimalCard) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private var currentToast: android.widget.Toast? = null
 
     companion object {
         const val VIEW_TYPE_HEADER = 0
@@ -40,6 +41,7 @@ class AnimalCollectionAdapter(
         val regionText: TextView = view.findViewById(R.id.animal_region)
         val questionMark: TextView = view.findViewById(R.id.question_mark)
         val hintText: TextView = view.findViewById(R.id.hint_text)
+        val starIndicator: ImageView = view.findViewById(R.id.star_indicator)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -89,14 +91,39 @@ class AnimalCollectionAdapter(
 
                         // Show image - special case for Hellbender
                         if (item.animal.id == "app_6") {
-                            // Use custom image for Hellbender
                             imageView.setImageResource(R.drawable.hellbendercard)
                         } else {
-                            // Use normal animal image
                             imageView.setImageResource(item.animal.imageResource)
                         }
                         imageView.colorFilter = null
                         imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+                        // Show star based on count
+                        if (item.count >= 3) {
+                            starIndicator.visibility = View.VISIBLE
+                            starIndicator.setImageResource(R.drawable.ic_star_filled)
+                        } else {
+                            starIndicator.visibility = View.VISIBLE
+                            starIndicator.setImageResource(R.drawable.ic_star_empty)
+                        }
+
+                        // Add star click listener
+                        starIndicator.setOnClickListener {
+                            val message = if (item.count >= 3) {
+                                "✨ Triplicate complete! You've caught ${item.count} ${item.animal.name}s"
+                            } else {
+                                "Catch 3 duplicates to complete! Currently: ${item.count}/3"
+                            }
+
+                            currentToast?.cancel()
+
+                            currentToast = android.widget.Toast.makeText(
+                                holder.itemView.context,
+                                message,
+                                android.widget.Toast.LENGTH_SHORT
+                            )
+                            currentToast?.show()
+                        }
 
                         // Hide question mark and show hint text
                         questionMark.visibility = View.GONE
@@ -109,11 +136,16 @@ class AnimalCollectionAdapter(
                         cardView.setOnClickListener {
                             onAnimalClick(item)
                         }
+
                     } else {
                         // Uncaught animal - show as mystery
                         nameText.text = "???"
                         rarityText.text = item.animal.rarity.displayName
                         regionText.text = item.animal.region
+
+                        // Hide star for uncaught animals
+                        starIndicator.visibility = View.GONE
+                        starIndicator.setOnClickListener(null)
 
                         // Gray background with border effect
                         cardView.setCardBackgroundColor(Color.parseColor("#CCCCCC"))
