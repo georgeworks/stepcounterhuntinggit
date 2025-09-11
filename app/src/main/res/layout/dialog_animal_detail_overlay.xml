@@ -54,6 +54,7 @@
         android:textSize="13sp"
         android:textColor="#FFD700"
         android:textStyle="italic|bold"
+        android:textIsSelectable="true"
         android:shadowColor="@android:color/black"
         android:shadowDx="2"
         android:shadowDy="2"
