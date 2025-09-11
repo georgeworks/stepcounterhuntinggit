@@ -36,7 +36,6 @@ class AnimalDetailDialog(
         val animalRarity: TextView? = view.findViewById(R.id.detail_animal_rarity)
         val animalDescription: TextView? = view.findViewById(R.id.detail_animal_description)
         val animalFunFact: TextView? = view.findViewById(R.id.detail_animal_fun_fact)
-        val animalRegion: TextView? = view.findViewById(R.id.detail_animal_region)
 
         if (animal.id == "app_6") {
             // Hellbender with overlay layout
@@ -47,7 +46,6 @@ class AnimalDetailDialog(
             animalRarity?.text = animal.rarity.displayName
             animalDescription?.text = animal.description
             animalFunFact?.text = "${animal.funFact}"
-            animalRegion?.text = "${animal.region}"
 
         } else {
             // Normal animals with standard layout
@@ -57,7 +55,6 @@ class AnimalDetailDialog(
             animalRarity?.setTextColor(Color.parseColor(animal.rarity.color))
             animalDescription?.text = animal.description
             animalFunFact?.text = "${animal.funFact}"
-            animalRegion?.text = "Found in: ${animal.region}"
         }
     }
 

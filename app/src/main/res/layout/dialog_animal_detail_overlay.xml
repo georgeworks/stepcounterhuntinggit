@@ -8,7 +8,8 @@
         android:id="@+id/detail_animal_image"
         android:layout_width="match_parent"
         android:layout_height="500dp"
-        android:scaleType="centerInside" />
+        android:scaleType="centerInside"
+        android:layout_marginHorizontal="18dp" />
 
     <!-- Rarity text above the star (top-right area) -->
     <TextView
@@ -16,8 +17,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
-        android:layout_marginTop="42dp"
-        android:layout_marginEnd="30dp"
+        android:layout_marginTop="53dp"
+        android:layout_marginEnd="40dp"
         android:text="Uncommon"
         android:textSize="14sp"
         android:textColor="#8B4513"
@@ -29,8 +30,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:layout_marginTop="30dp"
-        android:paddingLeft="30dp"
+        android:layout_marginTop="45dp"
+        android:paddingLeft="37dp"
         android:paddingRight="30dp"
         android:text="Hellbender"
         android:textSize="32sp"
@@ -47,8 +48,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:layout_marginTop="82dp"
-        android:paddingLeft="30dp"
+        android:layout_marginTop="97dp"
+        android:paddingLeft="42dp"
         android:paddingRight="30dp"
         android:text="Cryptobranchus alleganiensis"
         android:textSize="13sp"
@@ -61,22 +62,6 @@
         android:shadowRadius="3" />
 
     <!-- Region below the scientific name -->
-    <TextView
-        android:id="@+id/detail_animal_region"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:layout_marginTop="110dp"
-        android:paddingLeft="30dp"
-        android:paddingRight="30dp"
-        android:text="Found in: The Appalachians"
-        android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:textStyle="italic"
-        android:shadowColor="@android:color/black"
-        android:shadowDx="2"
-        android:shadowDy="2"
-        android:shadowRadius="3" />
 
     <!-- Fun fact in the bottom text box area -->
 
@@ -85,9 +70,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginLeft="25dp"
+        android:layout_marginLeft="35dp"
         android:layout_marginRight="25dp"
-        android:layout_marginBottom="25dp"
+        android:layout_marginBottom="40dp"
         android:lineSpacingMultiplier="1.1"
         android:paddingLeft="10dp"
         android:paddingTop="10dp"
