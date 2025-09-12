@@ -74,9 +74,9 @@ class RegionCardAdapter(
         val background = when (region.name) {
             "The Appalachians" -> R.drawable.gradient_background
             "Mojave Desert" -> R.drawable.gradient_background_desert
-            "Pacific Northwest" -> R.drawable.gradient_background_ocean
+            "Northern Rockies" -> R.drawable.gradient_background_ocean
             "Great Plains" -> R.drawable.gradient_background_plains
-            "Far North" -> R.drawable.gradient_background_arctic
+            "Everglades" -> R.drawable.gradient_background_arctic
             else -> R.drawable.gradient_background
         }
         holder.regionBackground.setBackgroundResource(background)
@@ -121,9 +121,9 @@ class RegionCardAdapter(
         return when (regionName) {
             "The Appalachians" -> "Mountain forests and valleys"
             "Mojave Desert" -> "Arid lands and canyons"
-            "Pacific Northwest" -> "Coastal rainforests"
+            "Northern Rockies" -> "Alpine Peaks"
             "Great Plains" -> "Vast grasslands"
-            "Far North" -> "Tundra and wilderness"
+            "Everglades" -> "Endless Wetlands"
             else -> "Explore and discover"
         }
     }
@@ -132,9 +132,9 @@ class RegionCardAdapter(
         return when (regionName) {
             "The Appalachians" -> android.R.drawable.ic_menu_mapmode
             "Mojave Desert" -> android.R.drawable.ic_menu_compass
-            "Pacific Northwest" -> android.R.drawable.ic_menu_gallery
+            "Northern Rockies" -> android.R.drawable.ic_menu_gallery
             "Great Plains" -> android.R.drawable.ic_menu_view
-            "Far North" -> android.R.drawable.ic_menu_myplaces
+            "Everglades" -> android.R.drawable.ic_menu_myplaces
             else -> android.R.drawable.ic_menu_mapmode
         }
     }

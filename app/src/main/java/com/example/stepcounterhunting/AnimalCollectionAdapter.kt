@@ -90,10 +90,10 @@ class AnimalCollectionAdapter(
                         borderFrame.background = null
 
                         // Show image - special case for Hellbender
-                        if (item.animal.id == "app_6") {
-                            imageView.setImageResource(R.drawable.hellbendercard)
-                        } else {
-                            imageView.setImageResource(item.animal.imageResource)
+                        when (item.animal.id) {
+                            "app_6" -> imageView.setImageResource(R.drawable.hellbendercard)
+                            "app_1" -> imageView.setImageResource(R.drawable.brooktroutcard)
+                            else -> imageView.setImageResource(item.animal.imageResource)
                         }
                         imageView.colorFilter = null
                         imageView.scaleType = ImageView.ScaleType.CENTER_CROP

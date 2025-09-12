@@ -340,92 +340,94 @@ object DataManager {
             )
         ),
         Region(
-            "Pacific Northwest",
+            "Northern Rockies",
             listOf(
-                // COMMON (3)
+                // COMMON (4)
                 Animal(
                     "pnw_1",
-                    "Banana Slug",
-                    "Ariolimax columbianus",
+                    "Columbian Ground Squirrel",
+                    "Urocitellus columbianus",
                     Rarity.COMMON,
-                    "Pacific Northwest",
-                    "Bright yellow and as long as a dinner roll, banana slugs keep the forest recycling. Their slime can numb predators’ tongues and even act like glue. After rain, trails become slow-motion highways."
+                    "Northern Rockies",
+                    "These burrowing squirrels are abundant in mountain meadows. They spend nearly 8 months of the year hibernating underground, then emerge in spring to whistle alarms and graze on lush alpine grasses."
                 ),
                 Animal(
                     "pnw_2",
-                    "Dungeness Crab",
-                    "Metacarcinus magister",
+                    "Rocky Mountain Elk",
+                    "Cervus canadensis nelsoni",
                     Rarity.COMMON,
-                    "Pacific Northwest",
-                    "A culinary star of bays and eelgrass flats, scuttling on armored tiptoes. Winter gales coincide with mating migrations. Molted shells rim beaches like purple-edged pottery."
+                    "Northern Rockies",
+                    "Herds of elk bugle haunting calls across valleys each fall. Males battle with towering antlers, while their migration routes shape predator movements and forest health in the Rockies."
                 ),
                 Animal(
                     "pnw_3",
-                    "Black-tailed Deer",
-                    "Odocoileus hemionus columbianus",
+                    "Yellow-bellied Marmot",
+                    "Marmota flaviventris",
                     Rarity.COMMON,
-                    "Pacific Northwest",
-                    "These shade-loving deer thrive from foggy coast to foothill clearings. Their black-tipped tails flick like punctuation in the understory. Watch at dusk where salal meets meadow."
+                    "Northern Rockies",
+                    "These burly alpine rodents sunbathe on boulders by day and whistle loudly when danger approaches. Their long hibernation—up to 8 months—helps them survive snowy winters."
                 ),
-                // UNCOMMON (2)
                 Animal(
                     "pnw_4",
-                    "Roosevelt Elk",
-                    "Cervus canadensis roosevelti",
+                    "Dusky Grouse",
+                    "Dendragapus obscurus",
                     Rarity.COMMON,
-                    "Pacific Northwest",
-                    "The largest elk subspecies browses river bottoms and ferny glades. Bulls bugle through mist that beads on mossy limbs. Herds step from fog like moving tree trunks."
+                    "Northern Rockies",
+                    "This large forest grouse thrives in high-elevation conifer stands. Males perform booming chest displays in spring, a sound echoing through quiet mountain ridges."
                 ),
+
+                // UNCOMMON (3)
                 Animal(
                     "pnw_5",
-                    "Pacific Giant Salamander",
-                    "Dicamptodon tenebrosus",
+                    "Rocky Mountain Goat",
+                    "Oreamnos americanus",
                     Rarity.UNCOMMON,
-                    "Pacific Northwest",
-                    "Hefty amphibians prowl cold creeks and can emit a tiny bark when disturbed. Larvae linger for years with feathery gills under stones. Old logs and clean water are non-negotiable."
+                    "Northern Rockies",
+                    "Sure-footed mountaineers, these shaggy white goats navigate cliffs no predator dares follow. Their thick coats and specialized hooves allow them to thrive on icy, windswept peaks."
                 ),
-                // RARE (2)
                 Animal(
                     "pnw_6",
-                    "Northern Spotted Owl",
-                    "Strix occidentalis caurina",
+                    "Pine Marten",
+                    "Martes americana",
                     Rarity.UNCOMMON,
-                    "Pacific Northwest",
-                    "Silent wings thread through cathedral-tall Douglas-fir and cedar. It needs big, broken-canopy forests and deep shade. Barred owl competition and logging made it an icon of conservation."
+                    "Northern Rockies",
+                    "A sleek, cat-like hunter of dense conifer forests. Pine martens weave through branches in pursuit of squirrels and birds, their presence signaling healthy, old-growth woods."
                 ),
                 Animal(
                     "pnw_7",
-                    "Marbled Murrelet",
-                    "Brachyramphus marmoratus",
+                    "Harlequin Duck",
+                    "Histrionicus histrionicus",
                     Rarity.UNCOMMON,
-                    "Pacific Northwest",
-                    "By day it fishes far offshore; by night it flies inland to nest on wide, mossy limbs of ancient conifers. The ‘nest’ is often just a moss pad 150 feet up. Its secret life stunned biologists when discovered."
+                    "Northern Rockies",
+                    "Males wear striking blue, chestnut, and white plumage. They breed only along cold, rushing mountain streams—making them a rare and dazzling sight in the Rockies."
                 ),
-                // EPIC (2)
+
+                // RARE (2)
                 Animal(
                     "pnw_8",
-                    "Sea Otter",
-                    "Enhydra lutris",
+                    "Wolverine",
+                    "Gulo gulo",
                     Rarity.RARE,
-                    "Pacific Northwest",
-                    "On its back with a stone anvil, it cracks urchins and clams like a pocket blacksmith. By trimming urchins, it protects kelp forests that blunt waves and shelter fish. Reintroductions are stitching the coast back together."
+                    "Northern Rockies",
+                    "Solitary, powerful, and elusive, the wolverine roams enormous alpine territories. Few animals embody wild resilience like this tenacious predator, able to drive off wolves and survive blizzards."
                 ),
                 Animal(
                     "pnw_9",
-                    "Gray Whale",
-                    "Eschrichtius robustus",
+                    "Canada Lynx",
+                    "Lynx canadensis",
                     Rarity.RARE,
-                    "Pacific Northwest",
-                    "Each spring, whales trace a 10,000-mile commute between Mexico and the Arctic, spouting just offshore. Some linger to ‘bubble blast’ shrimp from muddy shallows. Headlands become front-row seats."
+                    "Northern Rockies",
+                    "With enormous snowshoe-like paws, the lynx silently stalks snowshoe hares in deep winter forests. Populations here are among the southernmost strongholds of this elusive northern cat."
                 ),
+
                 // LEGENDARY (1)
                 Animal(
                     "pnw_10",
-                    "Killer Whale (Orca, SRKW)",
-                    "Orcinus orca",
+                    "Grizzly Bear",
+                    "Ursus arctos horribilis",
                     Rarity.LEGENDARY,
-                    "Pacific Northwest",
-                    "The Southern Resident orcas are tightly bonded family groups that specialize in salmon. Complex calls and matriarchal wisdom guide hunts through inland seas. Few marine animals feel more like neighbors."
+                    "Northern Rockies",
+                    "Towering and formidable, the grizzly symbolizes wilderness itself. Once nearly eliminated, it persists in rugged Northern Rockies strongholds. From salmon streams to alpine berry patches, its presence shapes entire ecosystems."
                 )
             )
         ),
@@ -520,92 +522,94 @@ object DataManager {
             )
         ),
         Region(
-            "Far North",
+            "Everglades",
             listOf(
-                // COMMON (3)
+                // COMMON (4)
                 Animal(
-                    "north_1",
-                    "Snowshoe Hare",
-                    "Lepus americanus",
+                    "ev_1",
+                    "American Alligator",
+                    "Alligator mississippiensis",
                     Rarity.COMMON,
-                    "Far North",
-                    "Color-shifting coats flip from brown to white as snow arrives. Oversized feet act like built-in snowshoes. Their boom-and-bust cycles ripple through northern food webs."
+                    "Everglades",
+                    "The keystone of the Everglades, alligators dig 'gator holes' that hold water in drought, sheltering fish, turtles, and birds. Bellowing males make the marsh vibrate like a drum each spring."
                 ),
                 Animal(
-                    "north_2",
-                    "Common Raven",
-                    "Corvus corax",
+                    "ev_2",
+                    "West Indian Manatee",
+                    "Trichechus manatus",
                     Rarity.COMMON,
-                    "Far North",
-                    "Tool-using tricksters that follow wolves and people for scraps. Their calls range from croaks to water-droplet plinks. Pairs often stay together for life across the tundra."
+                    "Everglades",
+                    "Gentle 'sea cows' cruise slow waters and graze on seagrass beds. Mothers nurse calves for two years, guiding them through warm river mouths and coastal lagoons."
                 ),
                 Animal(
-                    "north_3",
-                    "Harbor Seal",
-                    "Phoca vitulina",
+                    "ev_3",
+                    "Great Egret",
+                    "Ardea alba",
                     Rarity.COMMON,
-                    "Far North",
-                    "Whiskered divers that can nap underwater by shutting down half their brain. Pups recognize mom’s call in crowded haul-outs. Ice floes and kelp beds are floating nurseries."
-                ),
-                // UNCOMMON (2)
-                Animal(
-                    "north_4",
-                    "Arctic Fox",
-                    "Vulpes lagopus",
-                    Rarity.COMMON,
-                    "Far North",
-                    "Winter coats turn ghost-white, summer coats brown to match tundra seasons. When lemmings boom, fox families balloon too. They trail polar bears to scavenge leftovers on sea ice."
+                    "Everglades",
+                    "Tall, white wading birds that spear fish with lightning thrusts. Once nearly hunted to extinction for their plumes, they now stand as graceful symbols of wetland recovery."
                 ),
                 Animal(
-                    "north_5",
-                    "King Eider",
-                    "Somateria spectabilis",
+                    "ev_4",
+                    "Florida Softshell Turtle",
+                    "Apalone ferox",
+                    Rarity.COMMON,
+                    "Everglades",
+                    "Flat, pancake-like shells and snorkel snouts make this turtle perfectly adapted for shallow swamps. It buries in mud with only eyes and nose exposed, ambushing fish and frogs."
+                ),
+
+                // UNCOMMON (3)
+                Animal(
+                    "ev_5",
+                    "Roseate Spoonbill",
+                    "Platalea ajaja",
                     Rarity.UNCOMMON,
-                    "Far North",
-                    "Males wear kaleidoscope bills and mint-green necks that look painted on. Huge flocks raft off Alaska in spring. They dive deep for mussels in frigid currents without a shiver."
+                    "Everglades",
+                    "Brilliant pink plumage rivals flamingos, yet its spatula bill is its true marvel—sweeping side to side to sift shrimp and minnows. Their colonies light up the marsh like sunrise clouds."
                 ),
+                Animal(
+                    "ev_6",
+                    "Snail Kite",
+                    "Rostrhamus sociabilis plumbeus",
+                    Rarity.UNCOMMON,
+                    "Everglades",
+                    "A raptor found in the U.S. almost only here. Its sharply hooked bill pries open apple snails with surgical precision. Its fate is tied to the water levels that govern snail survival."
+                ),
+                Animal(
+                    "ev_7",
+                    "Limpkin",
+                    "Aramus guarauna",
+                    Rarity.UNCOMMON,
+                    "Everglades",
+                    "Their wailing cries echo over wetlands at night. Limpkins stalk marsh edges, cracking open apple snails with persistence that inspired their haunting local nickname, 'crying bird.'"
+                ),
+
                 // RARE (2)
                 Animal(
-                    "north_6",
-                    "Muskox",
-                    "Ovibos moschatus",
-                    Rarity.UNCOMMON,
-                    "Far North",
-                    "When danger looms, herds form a circle with calves in the center like a living fortress. Qiviut underwool is softer and warmer than cashmere. Tundra winds rattle their guard hairs like bead curtains."
-                ),
-                Animal(
-                    "north_7",
-                    "Snowy Owl",
-                    "Bubo scandiacus",
-                    Rarity.UNCOMMON,
-                    "Far North",
-                    "Ghost-white owls scan for voles from drifted hummocks. Some winters they irrupt far south, stunning beachgoers and city birders alike. Feathered feet are down booties against razor wind."
-                ),
-                // EPIC (2)
-                Animal(
-                    "north_8",
-                    "Moose",
-                    "Alces alces",
+                    "ev_8",
+                    "Florida Panther",
+                    "Puma concolor coryi",
                     Rarity.RARE,
-                    "Far North",
-                    "Standing seven feet at the shoulder, moose wade into icy lakes for aquatic plants. They can swim for miles and dive to lake bottoms. Bull antlers can span six feet like living fences."
+                    "Everglades",
+                    "This critically endangered cougar subspecies survives only in South Florida. Elusive and nocturnal, fewer than 200 remain, roaming cypress swamps and pinelands under cover of darkness."
                 ),
                 Animal(
-                    "north_9",
-                    "Brown Bear (Coastal Grizzly)",
-                    "Ursus arctos",
+                    "ev_9",
+                    "American Crocodile",
+                    "Crocodylus acutus",
                     Rarity.RARE,
-                    "Far North",
-                    "From Katmai to Kodiak, coastal bears grow enormous on salmon runs and sedge meadows. Cubs learn fishing like a family trade. A single tide can mean twenty fish for a skilled bear."
+                    "Everglades",
+                    "Unlike its alligator cousins, this crocodile prefers brackish estuaries and coastal mangroves. Narrow snouts, lighter color, and tolerance for saltwater set it apart in shared waters."
                 ),
+
                 // LEGENDARY (1)
                 Animal(
-                    "north_10",
-                    "Polar Bear",
-                    "Ursus maritimus",
+                    "ev_10",
+                    "Everglades Snail Kite",
+                    "Rostrhamus sociabilis plumbeus",
                     Rarity.LEGENDARY,
-                    "Far North",
-                    "The Arctic’s top predator patrols pack ice along Alaska’s North Slope. It can scent a seal’s breathing hole from miles away. Transparent fur over black skin turns sunlight into stealthy warmth."
+                    "Everglades",
+                    "This raptor is more than rare—it is the Everglades’ survival story. Entirely dependent on apple snails and stable marsh water, its presence is a fragile barometer of the ecosystem’s health. Spotting one in flight feels like witnessing the fate of the wetlands embodied in wings."
                 )
             )
         )
