@@ -73,7 +73,7 @@ class RegionCardAdapter(
         // Set background gradient based on region
         val background = when (region.name) {
             "The Appalachians" -> R.drawable.gradient_background
-            "Desert Southwest" -> R.drawable.gradient_background_desert
+            "Mojave Desert" -> R.drawable.gradient_background_desert
             "Pacific Northwest" -> R.drawable.gradient_background_ocean
             "Great Plains" -> R.drawable.gradient_background_plains
             "Far North" -> R.drawable.gradient_background_arctic
@@ -120,7 +120,7 @@ class RegionCardAdapter(
     private fun getRegionDescription(regionName: String): String {
         return when (regionName) {
             "The Appalachians" -> "Mountain forests and valleys"
-            "Desert Southwest" -> "Arid lands and canyons"
+            "Mojave Desert" -> "Arid lands and canyons"
             "Pacific Northwest" -> "Coastal rainforests"
             "Great Plains" -> "Vast grasslands"
             "Far North" -> "Tundra and wilderness"
@@ -131,7 +131,7 @@ class RegionCardAdapter(
     private fun getRegionIcon(regionName: String): Int {
         return when (regionName) {
             "The Appalachians" -> android.R.drawable.ic_menu_mapmode
-            "Desert Southwest" -> android.R.drawable.ic_menu_compass
+            "Mojave Desert" -> android.R.drawable.ic_menu_compass
             "Pacific Northwest" -> android.R.drawable.ic_menu_gallery
             "Great Plains" -> android.R.drawable.ic_menu_view
             "Far North" -> android.R.drawable.ic_menu_myplaces

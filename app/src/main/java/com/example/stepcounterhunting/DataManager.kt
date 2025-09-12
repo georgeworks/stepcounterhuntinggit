@@ -252,92 +252,90 @@ object DataManager {
             )
         ),
         Region(
-            "Desert Southwest",
+            "Mojave Desert",
             listOf(
-                // COMMON (3)
+                // COMMON (4)
                 Animal(
-                    "sw_1",
+                    "moj_1",
+                    "Merriam’s Kangaroo Rat",
+                    "Dipodomys merriami",
+                    Rarity.COMMON,
+                    "Mojave Desert",
+                    "This tiny nocturnal rodent survives without ever drinking water. Powerful back legs launch it in zig-zag leaps while cheek pouches carry seed harvests home like saddlebags."
+                ),
+                Animal(
+                    "moj_2",
+                    "Black-tailed Jackrabbit",
+                    "Lepus californicus",
+                    Rarity.COMMON,
+                    "Mojave Desert",
+                    "Built for desert speed, jackrabbits can sprint over 40 mph to escape coyotes and hawks. Their enormous ears work like cooling towers, radiating excess heat into the dry air. By crouching motionless in the shade of shrubs, they nearly disappear against the sandy ground—until they explode into a blur of long leaps across the desert floor."
+                ),
+                Animal(
+                    "moj_3",
+                    "Desert Cottontail",
+                    "Sylvilagus audubonii",
+                    Rarity.COMMON,
+                    "Mojave Desert",
+                    "One of the Mojave’s most familiar residents, the desert cottontail thrives in creosote flats and rocky washes. Its diet shifts with the seasons, from tender spring grasses to woody shrubs in drought. When startled, it flashes its white cotton-tail as a decoy, zigzagging unpredictably to outmaneuver hungry bobcats, coyotes, and raptors that patrol the desert."
+                ),
+                Animal(
+                    "moj_4",
                     "Greater Roadrunner",
                     "Geococcyx californianus",
                     Rarity.COMMON,
-                    "Desert Southwest",
-                    "Built for heat and speed, roadrunners dash at 20 mph across Sonoran scrub. They out-feint lizards and even small rattlesnakes. Morning sunbathing on dark skin patches tops up their warmth."
+                    "Mojave Desert",
+                    "A desert icon, the roadrunner combines the speed of a sprinter with the cunning of a predator. Capable of running faster than most humans, it dashes across open flats to snap up lizards, scorpions, and even rattlesnakes with lightning-fast strikes. Mornings begin with wings spread to soak up the sun’s warmth, before it resumes its patrol of the desert scrub."
                 ),
                 Animal(
-                    "sw_2",
-                    "Collared Peccary (Javelina)",
-                    "Pecari tajacu",
-                    Rarity.COMMON,
-                    "Desert Southwest",
-                    "Stocky and social, javelinas trot in bands that nose prickly-pear pads like green pancakes. Musk glands mark trails and beds. Chattering teeth and stiff mohawks make any desert stroll memorable."
-                ),
-                Animal(
-                    "sw_3",
-                    "Kangaroo Rat",
-                    "Dipodomys spp.",
-                    Rarity.COMMON,
-                    "Desert Southwest",
-                    "Masters of dry living, they never drink—kidneys and metabolism pull water from seeds. Cheek pouches carry harvests like saddlebags. One kick and they vanish in a cloud of sand."
-                ),
-                // UNCOMMON (2)
-                Animal(
-                    "sw_4",
+                    "moj_5",
                     "Desert Tortoise",
                     "Gopherus agassizii",
-                    Rarity.COMMON, // <- rarity from your code
-                    "Desert Southwest",
-                    "Spending most of life underground, it rides out scorching summers and sudden floods. Spring greens fuel months of stored water. After a single good rain, it tanks up like a living canteen."
+                    Rarity.UNCOMMON,
+                    "Mojave Desert",
+                    "This slow-moving reptile is a master of survival in a land of extremes. Spending up to 95% of its life in underground burrows, it avoids both blistering summer heat and freezing winter nights. After rare rains, it gulps down water and stores it in its bladder like a living canteen. Once widespread, it is now threatened and a symbol of Mojave conservation."
                 ),
                 Animal(
-                    "sw_5",
-                    "Harris’s Hawk",
-                    "Parabuteo unicinctus",
+                    "moj_6",
+                    "LeConte’s Thrasher",
+                    "Toxostoma lecontei",
                     Rarity.UNCOMMON,
-                    "Desert Southwest",
-                    "Unlike most hawks, they hunt cooperatively—leapfrogging from saguaro to saguaro. Family groups share lookout ‘towers’ and meals. The Southwest is their U.S. stronghold."
+                    "Mojave Desert",
+                    "A true desert specialist, this pale, sand-colored songbird blends seamlessly into dunes and washes. Unlike many birds, it runs more often than it flies, sprinting low over the sand to dig insects and seeds with its long, curved bill. Its haunting calls echo across the Mojave, but catching a glimpse of it requires patience and sharp eyes."
+                ),
+                Animal(
+                    "moj_7",
+                    "Burrowing Owl",
+                    "Athene cunicularia",
+                    Rarity.UNCOMMON,
+                    "Mojave Desert",
+                    "Unlike most owls, the burrowing owl is active in daylight, standing guard at the entrances of old rodent burrows. With long legs for sprinting, it bobs its head at intruders before vanishing underground. At dusk, it emerges to sweep silently across the desert floor, snapping up grasshoppers, beetles, and small mammals under the fading Mojave sun."
                 ),
                 // RARE (2)
                 Animal(
-                    "sw_6",
-                    "Gila Monster",
-                    "Heloderma suspectum",
-                    Rarity.UNCOMMON, // <- rarity from your code
-                    "Desert Southwest",
-                    "A handful of truly venomous lizards on Earth, and this is one. Beadlike scales glow like desert mosaics. Slow and sturdy, but its bite means business—look, don’t touch."
+                    "moj_8",
+                    "Chuckwalla",
+                    "Sauromalus ater",
+                    Rarity.RARE,
+                    "Mojave Desert",
+                    "A heavy-bodied, plant-eating lizard that basks like a statue on sunlit rocks. When threatened, it scurries into a crevice and inflates its lungs to wedge tightly, making it nearly impossible to pull free. Its calm demeanor and habit of soaking in heat for hours at a time make it one of the Mojave’s most iconic reptiles."
                 ),
                 Animal(
-                    "sw_7",
-                    "Elf Owl",
-                    "Micrathene whitneyi",
-                    Rarity.UNCOMMON, // <- rarity from your code
-                    "Desert Southwest",
-                    "The world’s smallest owl nests in abandoned woodpecker holes in cacti and mesquite. A faint squeak betrays a hunter barely taller than a smartphone. Crickets and moths power its midnight patrols."
-                ),
-                // EPIC (2)
-                Animal(
-                    "sw_8",
-                    "Desert Bighorn Sheep",
-                    "Ovis canadensis nelsoni",
-                    Rarity.RARE, // <- rarity from your code
-                    "Desert Southwest",
-                    "Rams clash at 40 mph on red-rock amphitheaters and walk away unshattered. Rubberized hooves grip slick sandstone where few predators can follow. Ewes teach lambs knife-edge ledges by spring."
-                ),
-                Animal(
-                    "sw_9",
-                    "Sonoran Pronghorn",
-                    "Antilocapra americana sonoriensis",
-                    Rarity.RARE, // <- rarity from your code
-                    "Desert Southwest",
-                    "A desert-adapted cousin of the plains form, built for blistering summers with sparse water. Bursts hit 60 mph—second only to cheetahs. Recovery herds straddle the U.S.–Mexico borderlands."
+                    "moj_9",
+                    "Mohave Ground Squirrel",
+                    "Xerospermophilus mohavensis",
+                    Rarity.RARE,
+                    "Mojave Desert",
+                    "Found only in the Mojave Desert, this squirrel is both elusive and threatened. It vanishes underground for months during drought, making sightings rare. Its entire global range fits within one desert—true Mojave treasure."
                 ),
                 // LEGENDARY (1)
                 Animal(
-                    "sw_10",
-                    "California Condor",
-                    "Gymnogyps californianus",
+                    "moj_10",
+                    "Mojave Desert Sidewinder",
+                    "Crotalus cerastes cerastes",
                     Rarity.LEGENDARY,
-                    "Desert Southwest",
-                    "North America’s largest bird rides hot thermals over canyon country of AZ/UT/CA. Lead-free landscapes and careful releases brought them back. A shadow passing overhead feels prehistoric."
+                    "Mojave Desert",
+                    "The Sidewinder rattlesnake is an emblem of desert mastery, moving sideways across shifting dunes where others sink. Its J-shaped tracks mark its passage through the sand. Raised horn-like scales above its eyes shield against grit, giving it a fierce appearance. Though small, its venom packs a punch, and its elusive nature makes an encounter feel like crossing paths with a ghost of the Mojave."
                 )
             )
         ),

@@ -711,7 +711,7 @@ class ProfileFragment : Fragment() {
     private fun getRegionIcon(regionName: String): Int {
         return when (regionName) {
             "The Appalachians" -> android.R.drawable.ic_menu_mapmode
-            "Desert Southwest" -> android.R.drawable.ic_menu_compass
+            "Mojave Desert" -> android.R.drawable.ic_menu_compass
             "Pacific Northwest" -> android.R.drawable.ic_menu_gallery
             "Great Plains" -> android.R.drawable.ic_menu_view
             "Far North" -> android.R.drawable.ic_menu_myplaces
