@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- add this into application to test first install logic and override auto backup from android
+            android:allowBackup="false" Update this field
+            tools:replace="android:allowBackup" add this one
+
+            -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

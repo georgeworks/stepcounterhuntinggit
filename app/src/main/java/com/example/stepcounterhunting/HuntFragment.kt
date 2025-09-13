@@ -30,6 +30,9 @@ import android.widget.LinearLayout
 import androidx.cardview.widget.CardView
 import androidx.viewpager2.widget.ViewPager2
 import androidx.recyclerview.widget.RecyclerView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class HuntFragment : Fragment(), SensorEventListener {
     private lateinit var countryScrollView: HorizontalScrollView
@@ -77,10 +80,12 @@ class HuntFragment : Fragment(), SensorEventListener {
     private var lastFragmentNotificationUpdate = 0
 
     companion object {
+
         const val STEPS_REQUIRED = 100
         const val CHANNEL_ID = "StepHuntingChannel"
         const val NOTIFICATION_ID = 2001
         const val NOTIFICATION_UPDATE_INTERVAL = 10
+        private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     }
 
     override fun onCreateView(
@@ -574,50 +579,46 @@ class HuntFragment : Fragment(), SensorEventListener {
             .format(java.util.Date())
 
         val streakPrefs = requireContext().getSharedPreferences("StreakData", Context.MODE_PRIVATE)
+        val recordPrefs = requireContext().getSharedPreferences("GameRecords", Context.MODE_PRIVATE)
         val lastCompletedDate = streakPrefs.getString("last_hunt_date", "") ?: ""
         val currentCycleStart = streakPrefs.getString("cycle_start_date", today) ?: today
         val streakDays = streakPrefs.getStringSet("streak_days", mutableSetOf()) ?: mutableSetOf()
 
-        // Check if streak is still consecutive
         val yesterday = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
             .format(java.util.Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000))
 
-        // Get total consecutive days
         var totalConsecutiveDays = streakPrefs.getInt("total_consecutive_days", 0)
-
-        // Get total lures earned from streaks (for tracking)
         var totalLuresFromStreaks = streakPrefs.getInt("total_lures_earned_from_streaks", 0)
 
-        // Check if this is a new day
         if (lastCompletedDate != today) {
-            // Check if we're continuing a streak or starting fresh
             if (lastCompletedDate == yesterday) {
-                // Continuing streak
                 totalConsecutiveDays++
             } else if (lastCompletedDate.isEmpty() || calculateDaysBetween(lastCompletedDate, today) > 1) {
-                // Broken streak or first hunt - reset to 1
                 totalConsecutiveDays = 1
-            } else {
-                // Same day, don't increment
+            }
+
+            // Track longest streak record
+            if (totalConsecutiveDays > recordPrefs.getInt("longest_streak", 0)) {
+                val displayDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
+                recordPrefs.edit()
+                    .putInt("longest_streak", totalConsecutiveDays)
+                    .putString("longest_streak_date", displayDateFormat.format(Date()))
+                    .apply()
             }
 
             val mutableStreakDays = streakDays.toMutableSet()
 
-            // Check if we need to start a new reward cycle (after 7 days)
             val daysSinceCycleStart = calculateDaysBetween(currentCycleStart ?: today, today)
 
             if (daysSinceCycleStart >= 7) {
-                // Start new reward cycle (but keep total consecutive days)
                 mutableStreakDays.clear()
                 streakPrefs.edit()
                     .putString("cycle_start_date", today)
                     .apply()
             }
 
-            // Add today to streak days for reward tracking
             mutableStreakDays.add(today)
 
-            // Check for lure rewards
             val streakCount = mutableStreakDays.size
             var luresAwarded = 0
             var message = ""
@@ -637,7 +638,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                 }
             }
 
-            // Add bonus message for milestone streaks
             when (totalConsecutiveDays) {
                 14 -> message = "$message\n🌟 14-DAY STREAK MILESTONE!"
                 30 -> message = "$message\n🏆 30-DAY STREAK ACHIEVEMENT!"
@@ -646,20 +646,30 @@ class HuntFragment : Fragment(), SensorEventListener {
             }
 
             if (luresAwarded > 0) {
-                // Award lures
                 repeat(luresAwarded) {
                     DataManager.addLure()
                 }
 
-                // Track total lures earned from streaks
                 totalLuresFromStreaks += luresAwarded
 
-                // IMPORTANT: Save the updated total immediately
+                // Track lures earned today from streaks
+                val dailyPrefs = requireContext().getSharedPreferences("DailyTracking", Context.MODE_PRIVATE)
+                val luresToday = dailyPrefs.getInt("lures_$today", 0) + luresAwarded
+                dailyPrefs.edit().putInt("lures_$today", luresToday).apply()
+
+                // Check if this is a new daily lure record
+                if (luresToday > recordPrefs.getInt("most_lures_day", 0)) {
+                    val displayDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
+                    recordPrefs.edit()
+                        .putInt("most_lures_day", luresToday)
+                        .putString("most_lures_date", displayDateFormat.format(Date()))
+                        .apply()
+                }
+
                 streakPrefs.edit()
                     .putInt("total_lures_earned_from_streaks", totalLuresFromStreaks)
                     .apply()
 
-                // Show celebration dialog
                 AlertDialog.Builder(requireContext())
                     .setTitle("Streak Reward!")
                     .setMessage(message)
@@ -671,7 +681,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                     .show()
             }
 
-            // Save updated streak data including total lures earned
             streakPrefs.edit()
                 .putString("last_hunt_date", today)
                 .putStringSet("streak_days", mutableStreakDays)
@@ -679,7 +688,6 @@ class HuntFragment : Fragment(), SensorEventListener {
                 .putInt("total_lures_earned_from_streaks", totalLuresFromStreaks)
                 .apply()
 
-            // Update UI
             updateStreakDisplay()
         }
     }
@@ -1246,6 +1254,8 @@ class HuntFragment : Fragment(), SensorEventListener {
             val isDuplicate = DataManager.addToCollection(caughtAnimal)
             DataManager.addExploredRegion(region.name)
 
+            // RECORDS TRACKING - Track this hunt
+            trackHuntRecords(caughtAnimal, isDuplicate)
             recordDailyHunt()
 
             val totalSteps = prefs.getInt("total_lifetime_steps", 0)
@@ -1284,6 +1294,79 @@ class HuntFragment : Fragment(), SensorEventListener {
         } ?: run {
             // If currentRegion is null, reset the flag
             isCatchInProgress = false
+        }
+    }
+    private fun trackHuntRecords(caughtAnimal: Animal, isDuplicate: Boolean) {
+        val today = dateFormat.format(Date())
+        val dailyPrefs = requireContext().getSharedPreferences("DailyTracking", Context.MODE_PRIVATE)
+        val recordPrefs = requireContext().getSharedPreferences("GameRecords", Context.MODE_PRIVATE)
+        val displayDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
+
+        // Track today's totals
+        val stepsToday = dailyPrefs.getInt("steps_$today", 0) + STEPS_REQUIRED
+        val animalsToday = dailyPrefs.getInt("animals_$today", 0) + 1
+        var luresToday = dailyPrefs.getInt("lures_$today", 0)
+
+        // Add lure if it's a duplicate
+        if (isDuplicate) {
+            luresToday += 1
+        }
+
+        // Save today's updated totals
+        dailyPrefs.edit()
+            .putInt("steps_$today", stepsToday)
+            .putInt("animals_$today", animalsToday)
+            .putInt("lures_$today", luresToday)
+            .apply()
+
+        // Check and update daily records
+
+        // Most steps in a day
+        if (stepsToday > recordPrefs.getInt("most_steps_day", 0)) {
+            recordPrefs.edit()
+                .putInt("most_steps_day", stepsToday)
+                .putString("most_steps_date", displayDateFormat.format(Date()))
+                .apply()
+        }
+
+        // Most animals in a day
+        if (animalsToday > recordPrefs.getInt("most_animals_day", 0)) {
+            recordPrefs.edit()
+                .putInt("most_animals_day", animalsToday)
+                .putString("most_animals_date", displayDateFormat.format(Date()))
+                .apply()
+        }
+
+        // Most lures in a day
+        if (luresToday > recordPrefs.getInt("most_lures_day", 0)) {
+            recordPrefs.edit()
+                .putInt("most_lures_day", luresToday)
+                .putString("most_lures_date", displayDateFormat.format(Date()))
+                .apply()
+        }
+
+        // Track best hunt (currently just 1 animal per hunt in your game)
+        // If you later allow multiple catches per hunt, update this
+        val animalsCaughtThisHunt = 1
+        if (animalsCaughtThisHunt > recordPrefs.getInt("best_hunt_animals", 0)) {
+            recordPrefs.edit()
+                .putInt("best_hunt_animals", animalsCaughtThisHunt)
+                .putString("best_hunt_date", displayDateFormat.format(Date()))
+                .apply()
+        }
+
+        // Track legendary catches
+        if (caughtAnimal.rarity == Rarity.LEGENDARY) {
+            val stats = DataManager.getStats()
+            val totalHunts = stats.totalSteps / STEPS_REQUIRED
+            val fastestHunts = recordPrefs.getInt("fastest_legendary_hunts", Int.MAX_VALUE)
+
+            if (totalHunts < fastestHunts) {
+                recordPrefs.edit()
+                    .putInt("fastest_legendary_hunts", totalHunts)
+                    .putString("fastest_legendary_name", caughtAnimal.name)
+                    .apply()
+            }
         }
     }
 

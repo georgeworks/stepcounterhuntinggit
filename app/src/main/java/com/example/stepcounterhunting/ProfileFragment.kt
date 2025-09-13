@@ -25,6 +25,8 @@ import android.widget.Switch
 import android.content.ActivityNotFoundException
 import android.content.ClipboardManager
 import android.content.ClipData
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class ProfileFragment : Fragment() {
 
@@ -42,6 +44,20 @@ class ProfileFragment : Fragment() {
     private var regionsTotal: TextView? = null
     private var luresValue: TextView? = null
     private var luresEarnedTotal: TextView? = null
+
+    // Records section views
+    private var mostStepsDayValue: TextView? = null
+    private var mostStepsDayDate: TextView? = null
+    private var mostAnimalsDayValue: TextView? = null
+    private var mostAnimalsDayDate: TextView? = null
+    private var longestStreakValue: TextView? = null
+    private var longestStreakDate: TextView? = null
+    private var fastestLegendaryValue: TextView? = null
+    private var fastestLegendaryName: TextView? = null
+    private var bestHuntValue: TextView? = null
+    private var bestHuntDate: TextView? = null
+    private var mostLuresDayValue: TextView? = null
+    private var mostLuresDayDate: TextView? = null
 
     // Rarity distribution views
     private var commonProgress: ProgressBar? = null
@@ -72,6 +88,7 @@ class ProfileFragment : Fragment() {
     private var resetProgressButton: Button? = null
 
     private val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+    private val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.US)
 
     // Challenge definitions
     data class Challenge(
@@ -80,6 +97,20 @@ class ProfileFragment : Fragment() {
         val description: String,
         val iconResource: Int,
         val checkCompletion: (ProfileFragment) -> Boolean
+    )
+    data class DailyRecord(
+        val date: String,
+        val steps: Int = 0,
+        val animalsCaught: Int = 0,
+        val luresEarned: Int = 0
+    )
+    data class GameRecords(
+        val mostStepsDay: DailyRecord? = null,
+        val mostAnimalsDay: DailyRecord? = null,
+        val longestStreak: Pair<Int, String>? = null, // streak count, end date
+        val fastestLegendary: Pair<String, Int>? = null, // animal name, hunts taken
+        val bestHunt: Pair<Int, String>? = null, // animals caught, date
+        val mostLuresDay: DailyRecord? = null
     )
 
     private val challenges = listOf(
@@ -233,6 +264,20 @@ class ProfileFragment : Fragment() {
         avgStepsPerHunt = view.findViewById(R.id.avg_steps_per_hunt)
         favoriteRegionValue = view.findViewById(R.id.favorite_region_value)
 
+        // Records section views
+        mostStepsDayValue = view.findViewById(R.id.most_steps_day_value)
+        mostStepsDayDate = view.findViewById(R.id.most_steps_day_date)
+        mostAnimalsDayValue = view.findViewById(R.id.most_animals_day_value)
+        mostAnimalsDayDate = view.findViewById(R.id.most_animals_day_date)
+        longestStreakValue = view.findViewById(R.id.longest_streak_value)
+        longestStreakDate = view.findViewById(R.id.longest_streak_date)
+        fastestLegendaryValue = view.findViewById(R.id.fastest_legendary_value)
+        fastestLegendaryName = view.findViewById(R.id.fastest_legendary_name)
+        bestHuntValue = view.findViewById(R.id.best_hunt_value)
+        bestHuntDate = view.findViewById(R.id.best_hunt_date)
+        mostLuresDayValue = view.findViewById(R.id.most_lures_day_value)
+        mostLuresDayDate = view.findViewById(R.id.most_lures_day_date)
+
         // Stamp grids
         regionsGrid = view.findViewById(R.id.regions_grid)
         countriesGrid = view.findViewById(R.id.countries_grid)
@@ -252,7 +297,6 @@ class ProfileFragment : Fragment() {
     private fun initializeSettings() {
         val prefs = requireContext().getSharedPreferences("StepCounter", Context.MODE_PRIVATE)
 
-
         // Notifications
         val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
         notificationsSwitch?.isChecked = notificationsEnabled
@@ -261,6 +305,9 @@ class ProfileFragment : Fragment() {
             Toast.makeText(context,
                 if (isChecked) "Notifications enabled" else "Notifications disabled",
                 Toast.LENGTH_SHORT).show()
+        }
+        resetProgressButton?.setOnClickListener {
+            showResetProgressDialog()
         }
 
         // Send Feedback
@@ -316,6 +363,8 @@ class ProfileFragment : Fragment() {
                 context?.getSharedPreferences("StepCounter", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
                 context?.getSharedPreferences("StepCounterData", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
                 context?.getSharedPreferences("StreakData", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
+                context?.getSharedPreferences("GameRecords", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
+                context?.getSharedPreferences("DailyTracking", Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
 
                 // Reinitialize DataManager
                 DataManager.init(requireContext())
@@ -341,6 +390,9 @@ class ProfileFragment : Fragment() {
         // If we have the enhanced layout, update those views too
         if (totalStepsValue != null) {
             updateEnhancedStats(stats)
+        }
+        if (mostStepsDayValue != null) {
+            updateRecordsDisplay()
         }
         // Update stamp grids if they exist
         if (regionsGrid != null || countriesGrid != null) {
@@ -741,5 +793,118 @@ class ProfileFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         updateStats()
+    }
+    private fun loadRecords(): GameRecords {
+        val prefs = requireContext().getSharedPreferences("GameRecords", Context.MODE_PRIVATE)
+
+        val mostStepsDay = if (prefs.contains("most_steps_day")) {
+            DailyRecord(
+                date = prefs.getString("most_steps_date", "") ?: "",
+                steps = prefs.getInt("most_steps_day", 0)
+            )
+        } else null
+
+        val mostAnimalsDay = if (prefs.contains("most_animals_day")) {
+            DailyRecord(
+                date = prefs.getString("most_animals_date", "") ?: "",
+                animalsCaught = prefs.getInt("most_animals_day", 0)
+            )
+        } else null
+
+        val mostLuresDay = if (prefs.contains("most_lures_day")) {
+            DailyRecord(
+                date = prefs.getString("most_lures_date", "") ?: "",
+                luresEarned = prefs.getInt("most_lures_day", 0)
+            )
+        } else null
+
+        val longestStreak = if (prefs.contains("longest_streak")) {
+            Pair(
+                prefs.getInt("longest_streak", 0),
+                prefs.getString("longest_streak_date", "") ?: ""
+            )
+        } else null
+
+        val fastestLegendary = if (prefs.contains("fastest_legendary_hunts") &&
+            prefs.getInt("fastest_legendary_hunts", Int.MAX_VALUE) != Int.MAX_VALUE) {
+            Pair(
+                prefs.getString("fastest_legendary_name", "") ?: "",
+                prefs.getInt("fastest_legendary_hunts", 0)
+            )
+        } else null
+
+        val bestHunt = if (prefs.contains("best_hunt_animals")) {
+            Pair(
+                prefs.getInt("best_hunt_animals", 0),
+                prefs.getString("best_hunt_date", "") ?: ""
+            )
+        } else null
+
+        return GameRecords(
+            mostStepsDay = mostStepsDay,
+            mostAnimalsDay = mostAnimalsDay,
+            longestStreak = longestStreak,
+            fastestLegendary = fastestLegendary,
+            bestHunt = bestHunt,
+            mostLuresDay = mostLuresDay
+        )
+    }
+
+    private fun updateRecordsDisplay() {
+        val records = loadRecords()
+
+        // Update most steps in a day
+        records.mostStepsDay?.let {
+            mostStepsDayValue?.text = numberFormat.format(it.steps)
+            mostStepsDayDate?.text = it.date
+        } ?: run {
+            mostStepsDayValue?.text = "-"
+            mostStepsDayDate?.text = "Not set"
+        }
+
+        // Update most animals in a day
+        records.mostAnimalsDay?.let {
+            mostAnimalsDayValue?.text = it.animalsCaught.toString()
+            mostAnimalsDayDate?.text = it.date
+        } ?: run {
+            mostAnimalsDayValue?.text = "-"
+            mostAnimalsDayDate?.text = "Not set"
+        }
+
+        // Update longest streak
+        records.longestStreak?.let {
+            longestStreakValue?.text = "${it.first} days"
+            longestStreakDate?.text = it.second
+        } ?: run {
+            longestStreakValue?.text = "-"
+            longestStreakDate?.text = "Not set"
+        }
+
+        // Update fastest legendary
+        records.fastestLegendary?.let {
+            fastestLegendaryValue?.text = "${it.second} hunts"
+            fastestLegendaryName?.text = it.first
+        } ?: run {
+            fastestLegendaryValue?.text = "-"
+            fastestLegendaryName?.text = "Not set"
+        }
+
+        // Update best hunt
+        records.bestHunt?.let {
+            bestHuntValue?.text = "${it.first} animals"
+            bestHuntDate?.text = it.second
+        } ?: run {
+            bestHuntValue?.text = "-"
+            bestHuntDate?.text = "Not set"
+        }
+
+        // Update most lures in a day
+        records.mostLuresDay?.let {
+            mostLuresDayValue?.text = it.luresEarned.toString()
+            mostLuresDayDate?.text = it.date
+        } ?: run {
+            mostLuresDayValue?.text = "-"
+            mostLuresDayDate?.text = "Not set"
+        }
     }
 }
