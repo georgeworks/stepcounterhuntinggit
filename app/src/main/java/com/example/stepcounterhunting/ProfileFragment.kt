@@ -342,6 +342,9 @@ class ProfileFragment : Fragment() {
             AlertDialog.Builder(requireContext())
                 .setTitle("Privacy Policy")
                 .setMessage("Step Hunter collects minimal data:\n\n" +
+                        "• Game progress is stored locally on your device. If you have Android backup enabled in your system settings, it may also be backed up to your Google Drive automatically.\n" +
+                        "• Progress syncs across devices signed into the same Google account. \n" +
+                        "• Allow up to 24 hours for recent progress to sync on other devices.\n" +
                         "• Step count data stays on your device\n" +
                         "• No personal information is shared\n" +
                         "• No ads or tracking\n\n" +
